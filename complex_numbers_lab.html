@@ -1,0 +1,2003 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Комплексні числа — інтерактивний курс</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<style>
+  :root{
+    --bg:#F4F6FA;
+    --panel:#FFFFFF;
+    --panel-2:#FBFCFE;
+    --border:#DFE4EC;
+    --grid:#ECEFF5;
+    --axis:#9AA4B8;
+    --text:#171F2E;
+    --muted:#647089;
+
+    --gold:#B8790E;
+    --gold-soft:#FBF0DC;
+    --teal:#0E8C86;
+    --teal-soft:#DCF3F1;
+    --coral:#C93862;
+    --coral-soft:#FBE3EA;
+    --slate:#5F6D8C;
+    --slate-soft:#EAECF3;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  .app{ max-width:1180px; margin:0 auto; padding:20px 20px 50px; }
+
+  header{ margin-bottom:14px; display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; }
+  h1{
+    font-family:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
+    font-weight:600;
+    font-size:19px;
+    margin:0;
+    color:#0F1626;
+    white-space:nowrap;
+  }
+  nav.tabs{ display:flex; gap:4px; border-bottom:1px solid var(--border); flex:1; }
+  nav.tabs button{
+    background:transparent; border:none; color:var(--muted);
+    font-size:14px; padding:9px 14px; cursor:pointer;
+    border-bottom:2px solid transparent; font-family:inherit;
+    transition:color .15s ease, border-color .15s ease;
+  }
+  nav.tabs button.active{ color:var(--text); border-bottom-color:var(--gold); }
+  nav.tabs button.disabled{ color:#B7BECC; cursor:default; }
+  nav.tabs button .soon{ font-size:10.5px; color:#B7BECC; margin-left:5px; }
+
+  .layout{ display:grid; grid-template-columns:1fr 320px; gap:18px; margin-top:18px; }
+  @media (max-width:820px){ .layout{grid-template-columns:1fr;} }
+
+  .panel{
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:10px; padding:16px;
+    box-shadow:0 1px 2px rgba(20,30,50,0.04);
+  }
+  .canvas-wrap{ position:relative; }
+  svg{ width:100%; height:auto; display:block; touch-action:none; }
+  .hint{ color:var(--muted); font-size:13px; margin-top:10px; line-height:1.5; }
+
+  .side{ display:flex; flex-direction:column; gap:12px; }
+  .readout{
+    background:var(--panel-2); border:1px solid var(--border);
+    border-radius:8px; padding:10px 14px;
+  }
+  .readout .label{
+    font-size:12.5px; color:var(--muted); margin-bottom:5px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .dot{ width:8px;height:8px;border-radius:50%; display:inline-block; }
+  .readout .kx{ font-size:16px; }
+  .readout .kx-sub{ font-size:13px; margin-top:4px; color:var(--muted); }
+  .readout .kx-sub .katex{ color:var(--muted); }
+
+  .controls{ display:flex; flex-direction:column; gap:10px; }
+  .toggle-row{
+    display:flex; align-items:center; gap:8px; font-size:13.5px;
+    color:var(--text); cursor:pointer; user-select:none;
+  }
+  .toggle-row input{ accent-color:var(--gold); width:15px;height:15px; }
+  button.reset{
+    background:transparent; border:1px solid var(--border); color:var(--text);
+    padding:9px 12px; border-radius:7px; font-size:13.5px; cursor:pointer;
+    font-family:inherit; transition:border-color .15s ease, background .15s ease;
+  }
+  button.reset:hover{ border-color:var(--gold); background:var(--gold-soft); }
+
+  .note{ font-size:13px; color:var(--muted); line-height:1.6; }
+  .note strong{ color:var(--text); font-weight:600; }
+
+  .placeholder{ padding:70px 20px; text-align:center; color:var(--muted); }
+  .placeholder .big{
+    font-family:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
+    font-style:italic; font-size:21px; color:#A7AFC0; margin-bottom:8px;
+  }
+
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
+  @media (max-width:820px){ .split{grid-template-columns:1fr;} }
+  .block-title{ font-size:13px; color:var(--muted); margin:0 0 10px; font-weight:600; }
+  .algebra-steps{ font-size:15.5px; line-height:1.9; }
+  .pattern-box{
+    background:var(--coral-soft); border:1px solid #F3C4D3; border-radius:8px;
+    padding:14px 16px; margin-top:14px; font-size:13.5px; line-height:1.7;
+  }
+  .pattern-box .kx{ margin:4px 0; }
+  .pattern-box .tease{ color:var(--muted); margin-top:8px; font-size:12.5px; }
+
+  .ring{
+    position:relative; height:100%; box-sizing:border-box;
+    border:1.5px solid var(--axis); border-radius:16px; padding:18px;
+  }
+  .ring-label{ position:absolute; top:6px; left:14px; font-size:13px; color:var(--text); font-weight:600; }
+  .ring-example{ position:absolute; bottom:6px; right:14px; font-size:13px; color:var(--muted); }
+
+  input[type=range]{ accent-color:var(--gold); cursor:pointer; }
+  .slider-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-size:12.5px; color:var(--muted); margin-bottom:2px;
+  }
+  .slider-val{
+    font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;
+    font-size:14.5px; color:var(--text); font-weight:600;
+  }
+  .chip{
+    background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    padding:5px 11px; border-radius:14px; font-size:13px; cursor:pointer;
+    font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .chip:hover{ border-color:var(--teal); background:var(--teal-soft); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>Комплексні числа</h1>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="zero">Означення</button>
+      <button class="tab-btn" data-tab="plane">Площина + додавання</button>
+      <button class="tab-btn" data-tab="mult">Множення</button>
+      <button class="tab-btn" data-tab="euler">Формула Ейлера</button>
+      <button class="tab-btn" data-tab="moivre">Формула Муавра і комплексні корені</button>
+      <button class="tab-btn" data-tab="game">Гра: збери сигнал</button>
+      <button class="tab-btn" data-tab="apps">Застосування</button>
+    </nav>
+  </header>
+
+  <!-- ===================== TAB 0: DEFINITIONS ===================== -->
+  <main id="tab-zero">
+    <div class="panel" style="margin-bottom:16px;">
+      <p class="block-title">Числові множини</p>
+      <div class="ring" style="height:260px;">
+        <span class="ring-label" id="lbl-C"></span>
+        <span class="ring-example" id="ex-C"></span>
+        <div class="ring">
+          <span class="ring-label" id="lbl-R"></span>
+          <span class="ring-example" id="ex-R"></span>
+          <div class="ring">
+            <span class="ring-label" id="lbl-Q"></span>
+            <span class="ring-example" id="ex-Q"></span>
+            <div class="ring">
+              <span class="ring-label" id="lbl-Z"></span>
+              <span class="ring-example" id="ex-Z"></span>
+              <div class="ring">
+                <span class="ring-label" id="lbl-N"></span>
+                <span class="ring-example" id="ex-N"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-bottom:16px;">
+      <p style="font-size:14.5px; line-height:1.75; margin:0;">Комплексне число — це впорядкована пара дійсних чисел <span id="def-pair"></span>, яку записують у вигляді <span id="def-form"></span>, де <span id="def-i"></span>. Число a називають <strong>дійсною частиною</strong> і позначають <span id="def-re"></span>; число b — <strong>уявною частиною</strong>, <span id="def-im"></span>.</p>
+    </div>
+
+    <p class="block-title">Модуль, аргумент, спряжене число</p>
+    <div class="layout">
+      <div class="panel canvas-wrap">
+        <svg id="svg-def" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow-gold-d" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--gold)"></path></marker>
+            <marker id="arrow-slate-d" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--slate)"></path></marker>
+            <marker id="arrow-axis-d" markerWidth="8" markerHeight="8" refX="5" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--axis)"></path></marker>
+          </defs>
+          <rect x="0" y="0" width="600" height="600" fill="var(--panel-2)"></rect>
+          <g id="grid-def"></g>
+          <g id="ticks-def"></g>
+          <line x1="30" y1="300" x2="570" y2="300" stroke="var(--axis)" stroke-width="1.4" marker-end="url(#arrow-axis-d)"></line>
+          <line x1="300" y1="570" x2="300" y2="30" stroke="var(--axis)" stroke-width="1.4" marker-end="url(#arrow-axis-d)"></line>
+          <text x="578" y="316" fill="var(--muted)" font-size="13">Re</text>
+          <text x="308" y="26" fill="var(--muted)" font-size="13">Im</text>
+          <line id="guide-v-def" x1="300" y1="300" x2="300" y2="300" stroke="var(--axis)" stroke-width="1.2" stroke-dasharray="4 4"></line>
+          <line id="guide-h-def" x1="300" y1="300" x2="300" y2="300" stroke="var(--axis)" stroke-width="1.2" stroke-dasharray="4 4"></line>
+          <path id="arc-z-def" fill="none" stroke="var(--gold)" stroke-width="1.6" opacity="0.85"></path>
+          <line id="vec-zc-def" x1="300" y1="300" x2="300" y2="300" stroke="var(--slate)" stroke-width="2.2" marker-end="url(#arrow-slate-d)"></line>
+          <circle id="pt-zc-def" r="8" fill="var(--slate)" stroke="var(--panel)" stroke-width="2"></circle>
+          <text id="lbl-zc-def" fill="var(--slate)" font-size="14" font-style="italic">z̄</text>
+          <line id="vec-z-def" x1="300" y1="300" x2="300" y2="300" stroke="var(--gold)" stroke-width="2.4" marker-end="url(#arrow-gold-d)"></line>
+          <circle id="pt-z-def" r="9" fill="var(--gold)" stroke="var(--panel)" stroke-width="2" style="cursor:grab"></circle>
+          <text id="lbl-z-def" fill="var(--gold)" font-size="14" font-style="italic">z</text>
+        </svg>
+        <p class="hint">Перетягніть точку z. Сіро-синя точка — спряжене число z̄ = a − bi, дзеркальне відображення z відносно дійсної осі.</p>
+      </div>
+
+      <div class="side">
+        <div class="readout">
+          <div class="label"><span class="dot" style="background:var(--gold)"></span>z</div>
+          <div class="kx" id="val-z-def"></div>
+        </div>
+        <div class="readout">
+          <div class="label"><span class="dot" style="background:var(--gold)"></span>модуль і аргумент</div>
+          <div class="kx" id="val-mod-def"></div>
+          <div class="kx" id="val-arg-def" style="margin-top:4px;"></div>
+        </div>
+        <div class="readout">
+          <div class="label"><span class="dot" style="background:var(--slate)"></span>спряжене z̄</div>
+          <div class="kx" id="val-conj-def"></div>
+        </div>
+        <button class="reset" id="btn-reset-def">Скинути</button>
+        <div class="pattern-box" style="background:var(--slate-soft); border-color:#D6DCEA;">
+          <div style="margin-bottom:6px;">Спряженим до z = a+bi називають число z̄ = a − bi — те саме число зі зміненим на протилежний знаком уявної частини. Геометрично це відображення точки z відносно дійсної осі.</div>
+          <div class="kx" id="val-identity-def"></div>
+          <div class="tease">Добуток числа на спряжене завжди дійсний і дорівнює квадрату модуля.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <p class="block-title">Чому arctg(b/a) недостатньо: аргумент і чверті</p>
+      <p class="note" style="margin:0 0 10px;">Здавалося б, кут можна знайти як <span id="arg-naive"></span>. Але частка b/a втрачає знаки окремих координат: у чисел <span id="arg-ex1"></span> і <span id="arg-ex2"></span> це відношення однакове, хоча точки лежать у протилежних чвертях і їхні аргументи різняться на 180°. Функція arctg завжди повертає значення з проміжку <span id="arg-range"></span>, тобто вміє описати лише праву половину площини.</p>
+      <p class="note" style="margin:0 0 10px;">Тому в обчисленнях застосовують двоаргументну версію <span id="arg-atan2"></span>, якій знаки a і b передають окремо. Вона сама визначає чверть і повертає кут у повному діапазоні <span id="arg-full"></span>:</p>
+      <div class="kx" id="arg-cases" style="margin:12px 0;"></div>
+      <p class="note" style="margin:0;">Ще один нюанс: аргумент визначений неоднозначно — додавання повного оберту дає ту саму точку, тобто <span id="arg-mod"></span> для будь-якого цілого k. Значення з проміжку (−180°, 180°] називають <strong>головним</strong> і позначають arg z; саме його повертає atan2. Ця неоднозначність не є дефектом — саме з неї пізніше виникнуть усі n коренів n-го степеня.</p>
+    </div>
+
+    <p class="block-title" style="margin-top:20px;">Обертання точки: проекції cos і sin</p>
+    <div class="layout">
+      <div class="panel canvas-wrap">
+        <svg id="svg-rot" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow-gold-r" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--gold)"></path></marker>
+          </defs>
+          <rect x="0" y="0" width="600" height="600" fill="var(--panel-2)"></rect>
+
+          <line x1="15" y1="200" x2="385" y2="200" stroke="var(--axis)" stroke-width="1.2"></line>
+          <line x1="200" y1="385" x2="200" y2="15" stroke="var(--axis)" stroke-width="1.2"></line>
+          <circle cx="200" cy="200" r="150" fill="none" stroke="var(--axis)" stroke-width="1.2" stroke-dasharray="3 5"></circle>
+          <text x="355" y="215" fill="var(--muted)" font-size="12">1</text>
+          <text x="34" y="215" fill="var(--muted)" font-size="12">−1</text>
+          <text x="206" y="60" fill="var(--muted)" font-size="12" font-style="italic">i</text>
+          <text x="206" y="352" fill="var(--muted)" font-size="12" font-style="italic">−i</text>
+
+          <!-- sine strip: праворуч від кола, спільна вертикальна вісь -->
+          <line x1="420" y1="0" x2="420" y2="400" stroke="var(--border)" stroke-width="1.2"></line>
+          <line x1="420" y1="200" x2="595" y2="200" stroke="var(--axis)" stroke-width="1"></line>
+          <text x="500" y="16" fill="var(--teal)" font-size="12" font-style="italic">sin θ</text>
+          <text x="428" y="58" fill="var(--muted)" font-size="10">1</text>
+          <text x="428" y="358" fill="var(--muted)" font-size="10">−1</text>
+          <text x="424" y="395" fill="var(--muted)" font-size="10">θ=0</text>
+          <text x="590" y="395" fill="var(--muted)" font-size="10" text-anchor="end">2π</text>
+          <path id="sine-curve" fill="none" stroke="var(--teal)" stroke-width="2.2"></path>
+
+          <!-- cosine strip: знизу від кола, спільна горизонтальна вісь -->
+          <line x1="0" y1="420" x2="400" y2="420" stroke="var(--border)" stroke-width="1.2"></line>
+          <line x1="200" y1="420" x2="200" y2="595" stroke="var(--axis)" stroke-width="1"></line>
+          <text x="170" y="434" fill="var(--gold)" font-size="12" font-style="italic">cos θ</text>
+          <text x="340" y="434" fill="var(--muted)" font-size="10">1</text>
+          <text x="44" y="434" fill="var(--muted)" font-size="10">−1</text>
+          <text x="4" y="430" fill="var(--muted)" font-size="10">θ=0</text>
+          <text x="4" y="592" fill="var(--muted)" font-size="10">2π</text>
+          <path id="cos-curve" fill="none" stroke="var(--gold)" stroke-width="2.2"></path>
+
+          <path id="arc-t-rot" fill="none" stroke="var(--gold)" stroke-width="1.6" opacity="0.85"></path>
+
+          <line id="guide-to-sine" x1="200" y1="200" x2="200" y2="200" stroke="var(--teal)" stroke-width="1.2" stroke-dasharray="4 4"></line>
+          <line id="guide-to-cos" x1="200" y1="200" x2="200" y2="200" stroke="var(--gold)" stroke-width="1.2" stroke-dasharray="4 4"></line>
+          <circle id="marker-sine" r="5" fill="var(--teal)" stroke="var(--panel)" stroke-width="1.5"></circle>
+          <circle id="marker-cos" r="5" fill="var(--gold)" stroke="var(--panel)" stroke-width="1.5"></circle>
+
+          <line id="vec-e-rot" x1="200" y1="200" x2="200" y2="200" stroke="var(--gold)" stroke-width="2.4" marker-end="url(#arrow-gold-r)"></line>
+          <circle id="pt-e-rot" r="8" fill="var(--gold)" stroke="var(--panel)" stroke-width="2"></circle>
+          <text id="lbl-e-rot" fill="var(--gold)" font-size="14" font-style="italic">z</text>
+        </svg>
+        <p class="hint">Пунктирні лінії — це і є проекції: висота точки на колі дорівнює висоті на графіку sin θ (праворуч), а її горизонтальне положення — положенню на графіку cos θ (знизу; вісь часу там іде вниз).</p>
+      </div>
+
+      <div class="side">
+        <div class="readout">
+          <div class="kx" id="val-theta-rot"></div>
+        </div>
+        <div class="readout">
+          <div class="kx" id="val-cos-rot"></div>
+        </div>
+        <div class="readout">
+          <div class="kx" id="val-sin-rot"></div>
+        </div>
+        <div class="panel controls" style="padding:12px 14px;">
+          <div class="slider-head"><span>кут θ</span><span class="slider-val" id="rot-theta-val">0.8 рад</span></div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button class="reset" id="btn-play-rot">▶ Пуск</button>
+            <input type="range" id="slider-theta" min="0" max="6.283" step="0.01" value="0.8" style="flex:1;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <p class="block-title">Тригонометрична форма</p>
+      <p class="note" style="margin-bottom:8px;">На колі радіуса 1 координати точки — це якраз проекції: <span id="tri-unit"></span>. Для довільного z із модулем r те саме правило проекції дає <span id="tri-a"></span> і <span id="tri-b"></span>. Підставивши це в z = a+bi, отримуємо:</p>
+      <div class="kx" id="tri-form" style="font-size:19px; text-align:center; margin-top:8px;"></div>
+    </div>
+  </main>
+
+  <!-- ===================== TAB 1: PLANE + ADDITION ===================== -->
+  <main id="tab-plane" style="display:none;">
+    <div class="layout">
+      <div class="panel canvas-wrap">
+        <svg id="svg-add" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow-gold-a" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--gold)"></path></marker>
+            <marker id="arrow-teal-a" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--teal)"></path></marker>
+            <marker id="arrow-coral-a" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--coral)"></path></marker>
+            <marker id="arrow-axis-a" markerWidth="8" markerHeight="8" refX="5" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--axis)"></path></marker>
+          </defs>
+          <rect x="0" y="0" width="600" height="600" fill="var(--panel-2)"></rect>
+          <g id="grid-add"></g>
+          <g id="ticks-add"></g>
+          <line x1="30" y1="300" x2="570" y2="300" stroke="var(--axis)" stroke-width="1.4" marker-end="url(#arrow-axis-a)"></line>
+          <line x1="300" y1="570" x2="300" y2="30" stroke="var(--axis)" stroke-width="1.4" marker-end="url(#arrow-axis-a)"></line>
+          <text x="578" y="316" fill="var(--muted)" font-size="13">Re</text>
+          <text x="308" y="26" fill="var(--muted)" font-size="13">Im</text>
+          <g id="guides-add" stroke-dasharray="4 4" fill="none" opacity="0.9"></g>
+          <line id="vec-z1-add" x1="300" y1="300" x2="300" y2="300" stroke="var(--gold)" stroke-width="2.4" marker-end="url(#arrow-gold-a)"></line>
+          <line id="vec-z2-add" x1="300" y1="300" x2="300" y2="300" stroke="var(--teal)" stroke-width="2.4" marker-end="url(#arrow-teal-a)"></line>
+          <line id="vec-sum-add" x1="300" y1="300" x2="300" y2="300" stroke="var(--coral)" stroke-width="2.6" marker-end="url(#arrow-coral-a)"></line>
+          <circle id="pt-z1-add" r="9" fill="var(--gold)" stroke="var(--panel)" stroke-width="2" style="cursor:grab"></circle>
+          <circle id="pt-z2-add" r="9" fill="var(--teal)" stroke="var(--panel)" stroke-width="2" style="cursor:grab"></circle>
+          <circle id="pt-sum-add" r="6.5" fill="var(--coral)" stroke="var(--panel)" stroke-width="2"></circle>
+          <text id="lbl-z1-add" fill="var(--gold)" font-size="14" font-style="italic">z₁</text>
+          <text id="lbl-z2-add" fill="var(--teal)" font-size="14" font-style="italic">z₂</text>
+          <text id="lbl-sum-add" fill="var(--coral)" font-size="14" font-style="italic">z₁+z₂</text>
+        </svg>
+        <p class="hint">Перетягніть жовту точку (z₁) або бірюзову (z₂). Коралова точка — їхня сума, четверта вершина паралелограма.</p>
+      </div>
+
+      <div class="side">
+        <div class="readout">
+          <div class="label"><span class="dot" style="background:var(--gold)"></span>z₁</div>
+          <div class="kx" id="val-z1-add"></div>
+        </div>
+        <div class="readout">
+          <div class="label"><span class="dot" style="background:var(--teal)"></span>z₂</div>
+          <div class="kx" id="val-z2-add"></div>
+        </div>
+        <div class="readout">
+          <div class="label"><span class="dot" style="background:var(--coral)"></span>z₁ + z₂</div>
+          <div class="kx" id="val-sum-add"></div>
+        </div>
+
+        <div class="panel controls" style="padding:12px 14px;">
+          <label class="toggle-row"><input type="checkbox" id="toggle-guides-add" checked>показати паралелограм</label>
+          <button class="reset" id="btn-reset-add">Скинути</button>
+        </div>
+
+        <p class="note">Алгебраїчно додавання комплексних чисел збігається з додаванням двовимірних векторів <span id="pair-note"></span>: дійсні частини додаються окремо, уявні — окремо. Тому геометрично сума будується за тим самим правилом паралелограма, яке ви знаєте з математики (векторна алгебра) та фізики (додавання сил чи переміщень) — це аналогія саме з <strong>двовимірними</strong> векторами, а не з векторами взагалі.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===================== TAB 2: MULTIPLICATION ===================== -->
+  <main id="tab-mult" style="display:none;">
+    <div class="layout">
+      <div class="panel canvas-wrap">
+        <svg id="svg-mult" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow-gold-m" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--gold)"></path></marker>
+            <marker id="arrow-teal-m" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--teal)"></path></marker>
+            <marker id="arrow-coral-m" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--coral)"></path></marker>
+            <marker id="arrow-axis-m" markerWidth="8" markerHeight="8" refX="5" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--axis)"></path></marker>
+          </defs>
+          <rect x="0" y="0" width="600" height="600" fill="var(--panel-2)"></rect>
+          <g id="grid-mult"></g>
+          <g id="ticks-mult"></g>
+          <line x1="30" y1="300" x2="570" y2="300" stroke="var(--axis)" stroke-width="1.4" marker-end="url(#arrow-axis-m)"></line>
+          <line x1="300" y1="570" x2="300" y2="30" stroke="var(--axis)" stroke-width="1.4" marker-end="url(#arrow-axis-m)"></line>
+          <text x="578" y="316" fill="var(--muted)" font-size="13">Re</text>
+          <text x="308" y="26" fill="var(--muted)" font-size="13">Im</text>
+
+          <path id="arc-z" fill="none" stroke="var(--gold)" stroke-width="1.6" opacity="0.8"></path>
+          <path id="arc-w" fill="none" stroke="var(--teal)" stroke-width="1.6" opacity="0.8"></path>
+          <path id="arc-zw" fill="none" stroke="var(--coral)" stroke-width="1.6" stroke-dasharray="2 3" opacity="0.9"></path>
+
+          <line id="vec-z-mult" x1="300" y1="300" x2="300" y2="300" stroke="var(--gold)" stroke-width="2.4" marker-end="url(#arrow-gold-m)"></line>
+          <line id="vec-w-mult" x1="300" y1="300" x2="300" y2="300" stroke="var(--teal)" stroke-width="2.4" marker-end="url(#arrow-teal-m)"></line>
+          <line id="vec-zw-mult" x1="300" y1="300" x2="300" y2="300" stroke="var(--coral)" stroke-width="2.6" marker-end="url(#arrow-coral-m)"></line>
+
+          <circle id="pt-z-mult" r="9" fill="var(--gold)" stroke="var(--panel)" stroke-width="2" style="cursor:grab"></circle>
+          <circle id="pt-w-mult" r="9" fill="var(--teal)" stroke="var(--panel)" stroke-width="2" style="cursor:grab"></circle>
+          <circle id="pt-zw-mult" r="6.5" fill="var(--coral)" stroke="var(--panel)" stroke-width="2"></circle>
+
+          <line id="vec-anim-mult" x1="300" y1="300" x2="300" y2="300" stroke="var(--coral)" stroke-width="2.2" stroke-dasharray="5 4" opacity="0"></line>
+          <circle id="pt-anim-mult" r="7" fill="none" stroke="var(--coral)" stroke-width="2.4" opacity="0"></circle>
+          <circle id="circle-anim-mult" cx="300" cy="300" r="0" fill="none" stroke="var(--axis)" stroke-width="1.2" stroke-dasharray="4 6" opacity="0"></circle>
+          <path id="arc-anim-mult" fill="none" stroke="var(--coral)" stroke-width="2.4" opacity="0"></path>
+          <text id="lbl-anim-mult" fill="var(--coral)" font-size="12.5" text-anchor="middle" opacity="0"></text>
+
+          <text id="lbl-z-mult" fill="var(--gold)" font-size="14" font-style="italic">z</text>
+          <text id="lbl-w-mult" fill="var(--teal)" font-size="14" font-style="italic">w</text>
+          <text id="lbl-zw-mult" fill="var(--coral)" font-size="14" font-style="italic">z·w</text>
+        </svg>
+        <p class="hint">Перетягніть z (золоте) і w (бірюзове). Пунктирні дуги — це кути arg(z), arg(w) і arg(z·w).</p>
+        <button class="reset" id="mult-play" style="margin-top:10px;">▶ Анімація: поворот, потім розтяг</button>
+      </div>
+
+      <div class="side">
+        <div class="readout">
+          <div class="label"><span class="dot" style="background:var(--gold)"></span>z</div>
+          <div class="kx" id="val-z-mult"></div>
+          <div class="kx-sub" id="polar-z-mult"></div>
+        </div>
+        <div class="readout">
+          <div class="label"><span class="dot" style="background:var(--teal)"></span>w</div>
+          <div class="kx" id="val-w-mult"></div>
+          <div class="kx-sub" id="polar-w-mult"></div>
+        </div>
+        <div class="readout">
+          <div class="label"><span class="dot" style="background:var(--coral)"></span>z · w</div>
+          <div class="kx" id="val-zw-mult"></div>
+          <div class="kx-sub" id="polar-zw-mult"></div>
+        </div>
+        <button class="reset" id="btn-reset-mult">Скинути</button>
+      </div>
+    </div>
+
+    <div class="split">
+      <div class="panel">
+        <p class="block-title">Алгебраїчно (чесно, але нудно)</p>
+        <div class="algebra-steps" id="algebra-steps"></div>
+      </div>
+      <div class="panel">
+        <p class="block-title">Геометрично (наочно, поки без пояснення)</p>
+        <p class="note" style="margin-bottom:10px;">Подивіться на дуги на малюнку зліва: кут z·w — це сума кута z і кута w. А довжина z·w — це добуток довжин z і w.</p>
+        <div class="pattern-box">
+          <div class="kx" id="pattern-mod"></div>
+          <div class="kx" id="pattern-arg"></div>
+          <div class="tease">Довжини — множаться. Кути — додаються. Чому множення раптом перетворюється на додавання кутів? Про це — у наступному розділі, коли з'явиться e^{iθ}.</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===================== TAB 3: EULER ===================== -->
+  <main id="tab-euler" style="display:none;">
+    <div class="panel" style="margin-bottom:16px;">
+      <p class="note" style="margin:0 0 10px;">З дійсного аналізу відома характеристична властивість експоненти: <span id="eu-prop"></span>. Тобто похідна дорівнює самій функції, помноженій на сталий коефіцієнт k — і саме цей коефіцієнт стоїть у показнику. Перевіримо, чи має таку властивість наша точка на одиничному колі <span id="eu-def"></span>:</p>
+      <div class="algebra-steps" id="euler-derivation"></div>
+      <p class="note" style="margin:10px 0 0;">Отримали рівно ту саму властивість — з коефіцієнтом <span id="eu-k"></span>. Оскільки до того ж <span id="eu-init"></span>, функція <span id="eu-fname"></span> задовольняє ті самі умови, що й <span id="eu-exp"></span>. Звідси й формула Ейлера.</p>
+    </div>
+
+    <p class="block-title">Швидкість завжди перпендикулярна: f′(θ) = i·f(θ)</p>
+    <div class="layout">
+      <div class="panel canvas-wrap">
+        <svg id="svg-euler" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow-gold-e" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--gold)"></path></marker>
+            <marker id="arrow-teal-e" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--teal)"></path></marker>
+          </defs>
+          <rect x="0" y="0" width="400" height="400" fill="var(--panel-2)"></rect>
+          <line x1="15" y1="200" x2="385" y2="200" stroke="var(--axis)" stroke-width="1.2"></line>
+          <line x1="200" y1="385" x2="200" y2="15" stroke="var(--axis)" stroke-width="1.2"></line>
+          <circle cx="200" cy="200" r="150" fill="none" stroke="var(--axis)" stroke-width="1.2" stroke-dasharray="3 5"></circle>
+          <line id="vec-f-eu" x1="200" y1="200" x2="200" y2="200" stroke="var(--gold)" stroke-width="2.4" marker-end="url(#arrow-gold-e)"></line>
+          <circle id="pt-f-eu" r="8" fill="var(--gold)" stroke="var(--panel)" stroke-width="2"></circle>
+          <text id="lbl-f-eu" fill="var(--gold)" font-size="14" font-style="italic">f(θ)</text>
+          <line id="vec-fp-eu" x1="200" y1="200" x2="200" y2="200" stroke="var(--teal)" stroke-width="2.2" marker-end="url(#arrow-teal-e)"></line>
+          <text id="lbl-fp-eu" fill="var(--teal)" font-size="13" font-style="italic">f′(θ)=i·f(θ)</text>
+        </svg>
+        <p class="hint">Бірюзовий вектор — швидкість точки, f′(θ). Він завжди перпендикулярний до золотого (самої точки) і має ту саму довжину — тому рух і відбувається по колу.</p>
+      </div>
+
+      <div class="side">
+        <div class="readout"><div class="kx" id="val-theta-eu"></div></div>
+        <div class="readout">
+          <div class="label"><span class="dot" style="background:var(--gold)"></span>f(θ)</div>
+          <div class="kx" id="val-f-eu"></div>
+        </div>
+        <div class="readout">
+          <div class="label"><span class="dot" style="background:var(--teal)"></span>f′(θ) і i·f(θ)</div>
+          <div class="kx" id="val-fp-eu"></div>
+          <div class="kx" id="val-if-eu" style="margin-top:4px;"></div>
+        </div>
+        <div class="panel controls" style="padding:12px 14px;">
+          <div class="slider-head"><span>кут θ</span><span class="slider-val" id="eu-theta-val">0.8 рад</span></div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button class="reset" id="btn-play-eu">▶ Пуск</button>
+            <input type="range" id="slider-theta-eu" min="0" max="6.283" step="0.01" value="0.8" style="flex:1;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <p class="block-title">Висновок: формула Ейлера</p>
+      <div class="kx" id="euler-formula" style="font-size:20px; text-align:center; margin:10px 0;"></div>
+      <div class="pattern-box" style="background:var(--gold-soft); border-color:#EAD3A0;">
+        <div class="kx" id="euler-90"></div>
+        <div class="tease">Частинний випадок θ = 90°: множення на i — це і є поворот на прямий кут, з яким ви вже зустрічались.</div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <p class="block-title">Заради чого все це: множення й ділення стають тривіальними</p>
+      <p class="note" style="margin:0 0 12px;">Запишемо числа в показниковій формі <span id="exp-form"></span>. Тоді громіздкі правила з попередньої вкладки перетворюються на звичайні дії зі степенями:</p>
+      <div class="split" style="margin-top:0;">
+        <div>
+          <p class="block-title">Множення</p>
+          <div class="kx" id="exp-mult"></div>
+        </div>
+        <div>
+          <p class="block-title">Ділення</p>
+          <div class="kx" id="exp-div"></div>
+        </div>
+      </div>
+      <p class="note" style="margin:14px 0 8px;">Порівняйте з алгебраїчною формою — там ділення вимагало домноження на спряжене знаменника:</p>
+      <div class="kx" id="exp-div-alg" style="margin-bottom:12px;"></div>
+      <p class="note" style="margin:0;">У показниковій формі те саме — це просто віднімання показників. Зокрема, звідси одразу видно й степінь: <span id="exp-pow"></span>, тобто формула Муавра, до якої ми перейдемо далі.</p>
+    </div>
+
+    <p class="block-title" style="margin-top:20px;">Множення як поворот на довільний кут</p>
+    <div class="layout">
+      <div class="panel canvas-wrap">
+        <svg id="svg-rotmul" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow-gold-rm" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--gold)"></path></marker>
+            <marker id="arrow-coral-rm" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--coral)"></path></marker>
+            <marker id="arrow-axis-rm" markerWidth="8" markerHeight="8" refX="5" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--axis)"></path></marker>
+          </defs>
+          <rect x="0" y="0" width="600" height="600" fill="var(--panel-2)"></rect>
+          <g id="grid-rm"></g>
+          <g id="ticks-rm"></g>
+          <line x1="30" y1="300" x2="570" y2="300" stroke="var(--axis)" stroke-width="1.4" marker-end="url(#arrow-axis-rm)"></line>
+          <line x1="300" y1="570" x2="300" y2="30" stroke="var(--axis)" stroke-width="1.4" marker-end="url(#arrow-axis-rm)"></line>
+          <text x="578" y="316" fill="var(--muted)" font-size="13">Re</text>
+          <text x="308" y="26" fill="var(--muted)" font-size="13">Im</text>
+          <path id="arc-rm" fill="none" stroke="var(--coral)" stroke-width="1.6" stroke-dasharray="2 3" opacity="0.9"></path>
+          <line id="vec-z-rm" x1="300" y1="300" x2="300" y2="300" stroke="var(--gold)" stroke-width="2.4" marker-end="url(#arrow-gold-rm)"></line>
+          <circle id="pt-z-rm" r="9" fill="var(--gold)" stroke="var(--panel)" stroke-width="2" style="cursor:grab"></circle>
+          <text id="lbl-z-rm" fill="var(--gold)" font-size="14" font-style="italic">z</text>
+          <line id="vec-zr-rm" x1="300" y1="300" x2="300" y2="300" stroke="var(--coral)" stroke-width="2.6" marker-end="url(#arrow-coral-rm)"></line>
+          <circle id="pt-zr-rm" r="7" fill="var(--coral)" stroke="var(--panel)" stroke-width="2"></circle>
+          <text id="lbl-zr-rm" fill="var(--coral)" font-size="14" font-style="italic">z′</text>
+        </svg>
+        <p class="hint">Перетягніть z (золоте). Повзунок θ обертає його навколо початку координат, не змінюючи довжини — результат z·e^{iθ} (коралове).</p>
+      </div>
+
+      <div class="side">
+        <div class="readout"><div class="kx" id="val-z-rm"></div></div>
+        <div class="readout"><div class="kx" id="val-theta-rm"></div></div>
+        <div class="readout">
+          <div class="label"><span class="dot" style="background:var(--coral)"></span><span id="lbl-readout-zr"></span></div>
+          <div class="kx" id="val-zr-rm"></div>
+        </div>
+        <div class="panel controls" style="padding:12px 14px;">
+          <div class="slider-head"><span>кут повороту θ</span><span class="slider-val" id="rm-theta-val">0.9 рад</span></div>
+          <input type="range" id="slider-theta-rm" min="0" max="6.283" step="0.01" value="0.9" style="width:100%;">
+        </div>
+        <button class="reset" id="btn-reset-rm">Скинути</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===================== TAB 4: MOIVRE ===================== -->
+  <main id="tab-moivre" style="display:none;">
+    <div class="panel" style="margin-bottom:16px;">
+      <p class="note" style="margin:0 0 10px;">Множення додає кути — отже, піднесення до степеня множить кут, а добування кореня його ділить. Це і є формула Муавра:</p>
+      <div class="kx" id="moivre-rule" style="font-size:17px; text-align:center;"></div>
+    </div>
+
+    <div class="layout">
+      <div class="panel canvas-wrap">
+        <svg id="svg-moivre" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow-gold-mv" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--gold)"></path></marker>
+            <marker id="arrow-coral-mv" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--coral)"></path></marker>
+            <marker id="arrow-teal-mv" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--teal)"></path></marker>
+            <marker id="arrow-axis-mv" markerWidth="8" markerHeight="8" refX="5" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--axis)"></path></marker>
+          </defs>
+          <rect x="0" y="0" width="600" height="600" fill="var(--panel-2)"></rect>
+          <g id="grid-mv"></g>
+          <g id="ticks-mv"></g>
+          <line x1="30" y1="300" x2="570" y2="300" stroke="var(--axis)" stroke-width="1.4" marker-end="url(#arrow-axis-mv)"></line>
+          <line x1="300" y1="570" x2="300" y2="30" stroke="var(--axis)" stroke-width="1.4" marker-end="url(#arrow-axis-mv)"></line>
+          <text x="578" y="316" fill="var(--muted)" font-size="13">Re</text>
+          <text x="308" y="26" fill="var(--muted)" font-size="13">Im</text>
+
+          <circle id="circle-mv" cx="300" cy="300" r="0" fill="none" stroke="var(--axis)" stroke-width="1.1" stroke-dasharray="3 5"></circle>
+          <path id="poly-mv" fill="none" stroke="var(--teal)" stroke-width="1.5" opacity="0.65"></path>
+          <path id="spiral-mv" fill="none" stroke="var(--coral)" stroke-width="2.2" opacity="0.9"></path>
+          <path id="arc-mv" fill="none" stroke="var(--gold)" stroke-width="1.6" opacity="0.8"></path>
+
+          <line id="vec-z-mv" x1="300" y1="300" x2="300" y2="300" stroke="var(--gold)" stroke-width="2.3" marker-end="url(#arrow-gold-mv)"></line>
+          <circle id="pt-z-mv" r="9" fill="var(--gold)" stroke="var(--panel)" stroke-width="2" style="cursor:grab"></circle>
+          <text id="lbl-z-mv" fill="var(--gold)" font-size="14" font-style="italic">z</text>
+
+          <line id="vec-res-mv" x1="300" y1="300" x2="300" y2="300" stroke="var(--coral)" stroke-width="2.6" marker-end="url(#arrow-coral-mv)"></line>
+          <circle id="pt-res-mv" r="7" fill="var(--coral)" stroke="var(--panel)" stroke-width="2"></circle>
+          <text id="lbl-res-mv" fill="var(--coral)" font-size="14" font-style="italic"></text>
+
+          <g id="roots-mv"></g>
+        </svg>
+        <p class="hint" id="hint-mv"></p>
+      </div>
+
+      <div class="side">
+        <div class="panel controls" style="padding:12px 14px;">
+          <label class="toggle-row"><input type="radio" name="mv-mode" id="mv-pow" checked>степінь z<sup>t</sup></label>
+          <label class="toggle-row"><input type="radio" name="mv-mode" id="mv-root">корінь n-го степеня</label>
+        </div>
+
+        <div class="panel controls" id="mv-ctl-t" style="padding:12px 14px;">
+          <div class="slider-head"><span>показник t</span><span class="slider-val" id="mv-t-val">2.0</span></div>
+          <input type="range" id="mv-t" min="0" max="4" step="0.05" value="2" style="width:100%;">
+          <button class="reset" id="mv-play">▶ Програти</button>
+        </div>
+
+        <div class="panel controls" id="mv-ctl-n" style="padding:12px 14px; display:none;">
+          <div class="slider-head"><span>корінь n</span><span class="slider-val" id="mv-n-val">3</span></div>
+          <input type="range" id="mv-n" min="2" max="9" step="1" value="3" style="width:100%;">
+        </div>
+
+        <div class="readout"><div class="kx" id="val-z-mv"></div></div>
+        <div class="readout"><div class="kx" id="val-res-mv"></div></div>
+        <button class="reset" id="mv-reset">Скинути z</button>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <p class="block-title">Спробуйте</p>
+      <p class="note" style="margin:0;">У режимі кореня поставте z = −8 (дійсне від'ємне число). У дійсних числах ∛(−8) один-єдиний; у комплексних їх рівно три, і вони утворюють правильний трикутник. Порухайте z — трикутник лише обертається й змінює розмір, але ніколи не деформується. Причина проста: усі n коренів мають однаковий модуль, а їхні аргументи відрізняються рівно на 360°/n, бо аргумент z визначений з точністю до повного оберту.</p>
+    </div>
+  </main>
+
+  <!-- ===================== TAB 5: GAME ===================== -->
+  <main id="tab-game" style="display:none;">
+    <div class="panel" style="margin-bottom:16px;">
+      <p class="note" style="margin:0 0 10px;">Сірий пунктир праворуч — таємний сигнал. Він є сумою чотирьох гармонік із частотами k = 1, 2, 3, 4. Для кожної треба підібрати <strong>амплітуду</strong> і <strong>фазу</strong> — одним рухом: перетягуйте точку-коефіцієнт c<sub>k</sub> на маленькій комплексній площині. Довжина вектора стає амплітудою, кут — фазою.</p>
+      <div class="kx" id="game-formula" style="font-size:16px; text-align:center; margin-top:10px;"></div>
+    </div>
+
+    <div class="layout">
+      <div class="panel canvas-wrap">
+        <svg id="svg-game" viewBox="0 0 900 620" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="0" width="900" height="620" fill="var(--panel-2)"></rect>
+          <g id="game-planes"></g>
+          <g id="game-waves"></g>
+          <line x1="520" y1="20" x2="520" y2="600" stroke="var(--border)" stroke-width="1.2"></line>
+          <text x="550" y="34" fill="var(--muted)" font-size="12">Ціль (пунктир) і ваша сума</text>
+          <line x1="550" y1="310" x2="880" y2="310" stroke="var(--axis)" stroke-width="1"></line>
+          <path id="game-target" fill="none" stroke="var(--axis)" stroke-width="2" stroke-dasharray="5 5"></path>
+          <path id="game-user" fill="none" stroke="var(--coral)" stroke-width="2.4"></path>
+        </svg>
+        <p class="hint">Перетягуйте кольорові точки на маленьких колах ліворуч. Поруч із кожним — внесок саме цієї гармоніки в сумарний сигнал.</p>
+      </div>
+
+      <div class="side">
+        <div class="panel controls" style="padding:12px 14px;">
+          <div class="slider-head"><span>Сходження з ціллю</span><span class="slider-val" id="game-pct">0 %</span></div>
+          <div style="height:10px; background:var(--slate-soft); border-radius:5px; overflow:hidden;">
+            <div id="game-bar" style="height:100%; width:0%; background:var(--teal); transition:width .15s ease;"></div>
+          </div>
+          <div id="game-ok" style="display:none; color:var(--teal); font-size:13.5px; font-weight:600; margin-top:6px;">🎉 Сигнал відтворено — амплітуди й фази влучні.</div>
+        </div>
+        <button class="reset" id="game-new">🎲 Нова ціль</button>
+        <button class="reset" id="game-reset">Скинути коефіцієнти</button>
+        <label class="toggle-row" style="padding:0 2px;"><input type="checkbox" id="game-hint">підказка: показати потрібну фазу</label>
+        <p class="note">Коефіцієнт c<sub>k</sub> — це комплексне число: модуль задає силу гармоніки, аргумент — зсув у часі. Саме тому спектр реальних сигналів зберігають як масив комплексних чисел, а не просто «висоти стовпчиків».</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===================== TAB 6: APPLICATIONS ===================== -->
+  <main id="tab-apps" style="display:none;">
+    <div class="panel" style="margin-bottom:16px;">
+      <p class="note" style="margin:0;">Коротка карта території: де вся ця теорія працює щодня. Без інтерактиву — просто орієнтири для майбутніх курсів.</p>
+    </div>
+
+    <div class="split">
+      <div class="panel">
+        <p class="block-title">QAM-сузір'я: як біти стають числами</p>
+        <svg id="svg-qam" viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">
+          <rect x="0" y="0" width="320" height="320" fill="var(--panel-2)"></rect>
+          <line x1="20" y1="160" x2="300" y2="160" stroke="var(--axis)" stroke-width="1"></line>
+          <line x1="160" y1="300" x2="160" y2="20" stroke="var(--axis)" stroke-width="1"></line>
+          <g id="qam-points"></g>
+        </svg>
+        <p class="note" style="margin-top:10px;">Кожна точка — комплексний коефіцієнт: модуль задає амплітуду несучої, аргумент — фазу. 16-QAM передає 4 біти одним «числом»; у WiFi та 5G сузір'я сягають 256-QAM і більше.</p>
+      </div>
+
+      <div class="panel">
+        <p class="block-title">Множина Мандельброта: z ↦ z² + c</p>
+        <canvas id="canvas-mandel" width="320" height="320" style="width:100%; height:auto; display:block; border-radius:6px;"></canvas>
+        <p class="note" style="margin-top:10px;">Єдине правило — подвоєння кута і квадрат модуля (та сама формула Муавра) — породжує нескінченну структуру. Такі відображення дають і красиві картинки, і моделі турбулентності, ландшафтів, антен.</p>
+      </div>
+    </div>
+
+    <div class="split" style="margin-top:16px;">
+      <div class="panel">
+        <p class="block-title">Цифровий фільтр: керування спектром</p>
+        <svg id="svg-filter" viewBox="0 0 340 250" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">
+          <rect x="0" y="0" width="340" height="250" fill="var(--panel-2)"></rect>
+          <rect x="30" y="30" width="99" height="170" fill="var(--teal)" opacity="0.10"></rect>
+          <rect x="129" y="30" width="181" height="170" fill="var(--coral)" opacity="0.07"></rect>
+          <line x1="30" y1="200" x2="315" y2="200" stroke="var(--axis)" stroke-width="1"></line>
+          <line x1="30" y1="24" x2="30" y2="206" stroke="var(--axis)" stroke-width="1"></line>
+          <path id="filter-curve" fill="none" stroke="var(--teal)" stroke-width="2.4"></path>
+          <text x="36" y="44" fill="var(--teal)" font-size="10.5">смуга пропускання</text>
+          <text x="306" y="44" fill="var(--coral)" font-size="10.5" text-anchor="end">смуга придушення</text>
+          <text x="300" y="216" fill="var(--muted)" font-size="11">f →</text>
+          <text x="16" y="34" fill="var(--muted)" font-size="11">|H|</text>
+        </svg>
+        <p class="note" style="margin-top:10px;">Фільтрація — це множення спектра на комплексну функцію H(f): модуль |H| підсилює або глушить частоти, а аргумент arg H зсуває фази. Різкі краї |H| дають «дзвін» у часі, лінійна фаза не викривляє форму сигналу. Так працює еквалайзер, шумозаглушення, декодування радіо.</p>
+      </div>
+
+      <div class="panel">
+        <p class="block-title">Квантова механіка: хвиля ψ</p>
+        <svg id="svg-quantum" viewBox="0 0 340 250" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">
+          <rect x="0" y="0" width="340" height="250" fill="var(--panel-2)"></rect>
+          <path id="quantum-prob" fill="var(--slate)" opacity="0.16" stroke="none"></path>
+          <line x1="20" y1="150" x2="320" y2="150" stroke="var(--axis)" stroke-width="1"></line>
+          <path id="quantum-re" fill="none" stroke="var(--gold)" stroke-width="1.9"></path>
+          <path id="quantum-im" fill="none" stroke="var(--teal)" stroke-width="1.9" stroke-dasharray="4 4"></path>
+          <text x="22" y="34" fill="var(--slate)" font-size="10.5">|ψ|² — густина ймовірності</text>
+          <text x="240" y="215" fill="var(--gold)" font-size="10.5">Re ψ</text>
+          <text x="240" y="230" fill="var(--teal)" font-size="10.5">Im ψ (пунктир)</text>
+        </svg>
+        <p class="note" style="margin-top:10px;">Стан частинки — комплексна хвиля ψ(x). Її еволюція в часі є множенням на обертання e<sup>−iEt/ℏ</sup> — та сама формула Ейлера. Спостережувана величина — це |ψ|². Уся «дивна» арифметика квантів і квантових обчислень — комплексні числа.</p>
+      </div>
+    </div>
+
+    <div class="split" style="margin-top:16px;">
+      <div class="panel">
+        <p class="block-title">OFDM: сотні несучих поруч</p>
+        <svg id="svg-ofdm" viewBox="0 0 340 250" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">
+          <rect x="0" y="0" width="340" height="250" fill="var(--panel-2)"></rect>
+          <line x1="20" y1="200" x2="320" y2="200" stroke="var(--axis)" stroke-width="1"></line>
+          <g id="ofdm-curves"></g>
+          <text x="296" y="216" fill="var(--muted)" font-size="11">f →</text>
+          <text x="22" y="30" fill="var(--muted)" font-size="10.5">кожен «пелюсток» — окрема несуча</text>
+        </svg>
+        <p class="note" style="margin-top:10px;">WiFi, 5G і цифрове телебачення передають дані одночасно на сотнях несучих. Частоти підібрані так, що в центрі кожної всі сусідки дорівнюють нулю — тому вони не заважають одна одній попри перекриття. Приймач розділяє їх одним перетворенням Фур'є, отримуючи по комплексному коефіцієнту на несучу.</p>
+      </div>
+
+      <div class="panel">
+        <p class="block-title">Імпеданс RLC: закон Ома для змінного струму</p>
+        <svg id="svg-impedance" viewBox="0 0 340 300" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto;">
+          <rect x="0" y="0" width="340" height="300" fill="var(--panel-2)"></rect>
+          <g id="impedance-circuit"></g>
+          <g id="impedance-marks"></g>
+        </svg>
+        <p class="note" style="margin-top:10px;">Опір кола змінного струму — комплексне число Z = R + i(X<sub>L</sub> − X<sub>C</sub>). Резистор не зсуває фазу, ідеальна котушка зсуває її рівно на +90° (вектор угору, +iωL), конденсатор — на −90° (вниз, −i/ωC). При послідовному з'єднанні опори просто додаються як комплексні числа, і сумарний Z задає і повний опір |Z|, і фазовий зсув arg Z. Закон Ома V = I·Z працює для всіх трьох однаково.</p>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <p class="block-title">Напрями, де це працює</p>
+      <ul style="font-size:13.5px; line-height:1.85; color:var(--muted); margin:0; padding-left:20px;">
+        <li><strong style="color:var(--text)">Сигнали та спектр.</strong> FFT розкладає будь-який сигнал на обертання e<sup>i2πft</sup> — основа обробки аудіо, радіо, зображень.</li>
+        <li><strong style="color:var(--text)">Фільтри.</strong> Фільтрація — це множення спектра на комплексну функцію H(f): її модуль керує підсиленням частот, аргумент — зсувом фаз.</li>
+        <li><strong style="color:var(--text)">Модуляція QAM / OFDM.</strong> WiFi, 5G і кабельні модеми кодують біти прямо в комплексні коефіцієнти — амплітуда плюс фаза однієї несучої.</li>
+        <li><strong style="color:var(--text)">Квантова механіка.</strong> Стан частинки — комплексна хвиля ψ; її еволюція в часі є множенням на e<sup>−iEt/ℏ</sup>. Квантові обчислення спираються на те саме.</li>
+        <li><strong style="color:var(--text)">Фрактали.</strong> z ↦ z² + c дає і Мандельброта, і Жюліа; споріднені відображення моделюють турбулентність, ландшафти, антени.</li>
+        <li><strong style="color:var(--text)">Електротехніка.</strong> Імпеданс кіл змінного струму — комплексне число; закон Ома V = I·Z однаково працює для опору, котушок і конденсаторів.</li>
+        <li><strong style="color:var(--text)">Графіка та робототехніка.</strong> Поворот на площині — це множення на e<sup>iφ</sup>; у тривимірному просторі ту саму роль відіграють кватерніони.</li>
+        <li><strong style="color:var(--text)">Теорія керування.</strong> Стійкість системи перевіряють за розташуванням комплексних коренів характеристичного рівняння (критерій Найквіста).</li>
+        <li><strong style="color:var(--text)">Лінійна алгебра.</strong> Комплексні власні числа матриці описують обертання й коливання в системі — з цим ви зустрінетесь уже наступного семестру.</li>
+      </ul>
+    </div>
+  </main>
+
+</div>
+
+<script>
+(function(){
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const CX = 300, CY = 300;
+  const HALF = 260; // usable half-canvas in px
+
+  function katexOrText(el, latex, displayMode){
+    try{
+      if(window.katex){
+        katex.render(latex, el, {throwOnError:false, displayMode: !!displayMode});
+        return;
+      }
+    }catch(e){}
+    el.textContent = latex;
+  }
+
+  function fmt1(n){
+    let r = Math.round(n*10)/10;
+    if(Object.is(r,-0)) r = 0;
+    return r.toFixed(1);
+  }
+  function complexLatex(re,im){
+    const a = fmt1(re);
+    const bAbs = fmt1(Math.abs(im));
+    const sign = im < -0.049 ? '-' : '+';
+    return `${a} ${sign} ${bAbs}i`;
+  }
+
+  function buildStaticAxes(gridEl, ticksEl, range, scale, toSvgX, toSvgY){
+    gridEl.innerHTML=''; ticksEl.innerHTML='';
+    for(let i=-range;i<=range;i++){
+      if(i===0) continue;
+      const vx = toSvgX(i), vy = toSvgY(i);
+      const lv = document.createElementNS(svgNS,'line');
+      lv.setAttribute('x1',vx); lv.setAttribute('y1',30);
+      lv.setAttribute('x2',vx); lv.setAttribute('y2',570);
+      lv.setAttribute('stroke','var(--grid)'); lv.setAttribute('stroke-width','1');
+      gridEl.appendChild(lv);
+      const lh = document.createElementNS(svgNS,'line');
+      lh.setAttribute('x1',30); lh.setAttribute('y1',vy);
+      lh.setAttribute('x2',570); lh.setAttribute('y2',vy);
+      lh.setAttribute('stroke','var(--grid)'); lh.setAttribute('stroke-width','1');
+      gridEl.appendChild(lh);
+
+      const tRe = document.createElementNS(svgNS,'text');
+      tRe.setAttribute('x', vx); tRe.setAttribute('y', CY+16);
+      tRe.setAttribute('text-anchor','middle');
+      tRe.setAttribute('fill','var(--muted)'); tRe.setAttribute('font-size','11');
+      tRe.textContent = i;
+      ticksEl.appendChild(tRe);
+
+      const tIm = document.createElementNS(svgNS,'text');
+      tIm.setAttribute('x', CX-8); tIm.setAttribute('y', vy+4);
+      tIm.setAttribute('text-anchor','end');
+      tIm.setAttribute('fill','var(--muted)'); tIm.setAttribute('font-size','11');
+      tIm.setAttribute('font-style','italic');
+      tIm.textContent = (i===1?'i': i===-1?'\u2212i': i+'i');
+      ticksEl.appendChild(tIm);
+    }
+  }
+
+  function makeCanvasHelpers(range){
+    const scale = HALF/range;
+    function toSvgX(re){ return CX + re*scale; }
+    function toSvgY(im){ return CY - im*scale; }
+    function toMathX(sx){ return (sx-CX)/scale; }
+    function toMathY(sy){ return -(sy-CY)/scale; }
+    return {toSvgX, toSvgY, toMathX, toMathY, scale, range};
+  }
+
+  function svgPointFactory(svgEl){
+    return function(evt){
+      const pt = svgEl.createSVGPoint();
+      pt.x = evt.clientX; pt.y = evt.clientY;
+      const ctm = svgEl.getScreenCTM().inverse();
+      return pt.matrixTransform(ctm);
+    };
+  }
+
+  function makeDraggable(handle, target, svgPointFn, onMove){
+    let dragging = false;
+    handle.addEventListener('pointerdown', (e)=>{
+      dragging = true; handle.setPointerCapture(e.pointerId); handle.style.cursor = 'grabbing';
+    });
+    handle.addEventListener('pointermove', (e)=>{
+      if(!dragging) return;
+      onMove(target, svgPointFn(e));
+    });
+    function stop(){ dragging = false; handle.style.cursor = 'grab'; }
+    handle.addEventListener('pointerup', stop);
+    handle.addEventListener('pointercancel', stop);
+  }
+
+  /* ============ TAB 1: ADDITION ============ */
+  (function(){
+    const RANGE = 6;
+    const svg = document.getElementById('svg-add');
+    const helpers = makeCanvasHelpers(RANGE);
+    const svgPoint = svgPointFactory(svg);
+    buildStaticAxes(document.getElementById('grid-add'), document.getElementById('ticks-add'), RANGE, helpers.scale, helpers.toSvgX, helpers.toSvgY);
+
+    katexOrText(document.getElementById('pair-note'), '(a,b)+(c,d)');
+
+    let z1 = {re:3, im:2};
+    let z2 = {re:-2, im:3};
+    const DEFAULTS = {z1:{re:3,im:2}, z2:{re:-2,im:3}};
+
+    const ptZ1 = document.getElementById('pt-z1-add');
+    const ptZ2 = document.getElementById('pt-z2-add');
+    const ptSum = document.getElementById('pt-sum-add');
+    const vecZ1 = document.getElementById('vec-z1-add');
+    const vecZ2 = document.getElementById('vec-z2-add');
+    const vecSum = document.getElementById('vec-sum-add');
+    const guides = document.getElementById('guides-add');
+    const lblZ1 = document.getElementById('lbl-z1-add');
+    const lblZ2 = document.getElementById('lbl-z2-add');
+    const lblSum = document.getElementById('lbl-sum-add');
+    const toggleGuides = document.getElementById('toggle-guides-add');
+    const {toSvgX, toSvgY} = helpers;
+
+    function render(){
+      const sumRe = z1.re+z2.re, sumIm = z1.im+z2.im;
+
+      ptZ1.setAttribute('cx', toSvgX(z1.re)); ptZ1.setAttribute('cy', toSvgY(z1.im));
+      ptZ2.setAttribute('cx', toSvgX(z2.re)); ptZ2.setAttribute('cy', toSvgY(z2.im));
+      ptSum.setAttribute('cx', toSvgX(sumRe)); ptSum.setAttribute('cy', toSvgY(sumIm));
+
+      vecZ1.setAttribute('x2', toSvgX(z1.re)); vecZ1.setAttribute('y2', toSvgY(z1.im));
+      vecZ2.setAttribute('x2', toSvgX(z2.re)); vecZ2.setAttribute('y2', toSvgY(z2.im));
+      vecSum.setAttribute('x2', toSvgX(sumRe)); vecSum.setAttribute('y2', toSvgY(sumIm));
+
+      lblZ1.setAttribute('x', toSvgX(z1.re)+10); lblZ1.setAttribute('y', toSvgY(z1.im)-10);
+      lblZ2.setAttribute('x', toSvgX(z2.re)+10); lblZ2.setAttribute('y', toSvgY(z2.im)-10);
+      lblSum.setAttribute('x', toSvgX(sumRe)+10); lblSum.setAttribute('y', toSvgY(sumIm)-10);
+
+      guides.innerHTML = '';
+      if(toggleGuides.checked){
+        const g1 = document.createElementNS(svgNS,'line');
+        g1.setAttribute('x1', toSvgX(z1.re)); g1.setAttribute('y1', toSvgY(z1.im));
+        g1.setAttribute('x2', toSvgX(sumRe)); g1.setAttribute('y2', toSvgY(sumIm));
+        g1.setAttribute('stroke','var(--teal)'); g1.setAttribute('stroke-width','1.4');
+        guides.appendChild(g1);
+        const g2 = document.createElementNS(svgNS,'line');
+        g2.setAttribute('x1', toSvgX(z2.re)); g2.setAttribute('y1', toSvgY(z2.im));
+        g2.setAttribute('x2', toSvgX(sumRe)); g2.setAttribute('y2', toSvgY(sumIm));
+        g2.setAttribute('stroke','var(--gold)'); g2.setAttribute('stroke-width','1.4');
+        guides.appendChild(g2);
+      }
+
+      katexOrText(document.getElementById('val-z1-add'), 'z_1 = ' + complexLatex(z1.re, z1.im));
+      katexOrText(document.getElementById('val-z2-add'), 'z_2 = ' + complexLatex(z2.re, z2.im));
+      katexOrText(document.getElementById('val-sum-add'), 'z_1+z_2 = ' + complexLatex(sumRe, sumIm));
+    }
+
+    function clamp(v){ return Math.max(-RANGE+0.3, Math.min(RANGE-0.3, v)); }
+    makeDraggable(ptZ1, z1, svgPoint, (t,p)=>{ t.re = clamp(helpers.toMathX(p.x)); t.im = clamp(helpers.toMathY(p.y)); render(); });
+    makeDraggable(ptZ2, z2, svgPoint, (t,p)=>{ t.re = clamp(helpers.toMathX(p.x)); t.im = clamp(helpers.toMathY(p.y)); render(); });
+
+    toggleGuides.addEventListener('change', render);
+    document.getElementById('btn-reset-add').addEventListener('click', ()=>{
+      z1.re=DEFAULTS.z1.re; z1.im=DEFAULTS.z1.im;
+      z2.re=DEFAULTS.z2.re; z2.im=DEFAULTS.z2.im;
+      render();
+    });
+
+    render();
+  })();
+
+  /* ============ TAB 2: MULTIPLICATION ============ */
+  (function(){
+    const RANGE = 8;
+    const svg = document.getElementById('svg-mult');
+    const helpers = makeCanvasHelpers(RANGE);
+    const svgPoint = svgPointFactory(svg);
+    buildStaticAxes(document.getElementById('grid-mult'), document.getElementById('ticks-mult'), RANGE, helpers.scale, helpers.toSvgX, helpers.toSvgY);
+    const {toSvgX, toSvgY} = helpers;
+
+    let z = {re:1.5, im:0.8};
+    let w = {re:0.5, im:1.6};
+    const DEFAULTS = {z:{re:1.5,im:0.8}, w:{re:0.5,im:1.6}};
+
+    const ptZ = document.getElementById('pt-z-mult');
+    const ptW = document.getElementById('pt-w-mult');
+    const ptZW = document.getElementById('pt-zw-mult');
+    const vecZ = document.getElementById('vec-z-mult');
+    const vecW = document.getElementById('vec-w-mult');
+    const vecZW = document.getElementById('vec-zw-mult');
+    const lblZ = document.getElementById('lbl-z-mult');
+    const lblW = document.getElementById('lbl-w-mult');
+    const lblZW = document.getElementById('lbl-zw-mult');
+    const arcZ = document.getElementById('arc-z');
+    const arcW = document.getElementById('arc-w');
+    const arcZW = document.getElementById('arc-zw');
+
+    function arcPath(cx,cy,r,startDeg,endDeg){
+      const steps = 28;
+      let d = '';
+      for(let i=0;i<=steps;i++){
+        const deg = startDeg + (endDeg-startDeg)*(i/steps);
+        const rad = deg*Math.PI/180;
+        const x = cx + r*Math.cos(rad);
+        const y = cy - r*Math.sin(rad);
+        d += (i===0? 'M':'L') + x.toFixed(2) + ',' + y.toFixed(2) + ' ';
+      }
+      return d;
+    }
+
+    function render(){
+      const zwRe = z.re*w.re - z.im*w.im;
+      const zwIm = z.re*w.im + z.im*w.re;
+
+      ptZ.setAttribute('cx', toSvgX(z.re)); ptZ.setAttribute('cy', toSvgY(z.im));
+      ptW.setAttribute('cx', toSvgX(w.re)); ptW.setAttribute('cy', toSvgY(w.im));
+      ptZW.setAttribute('cx', toSvgX(zwRe)); ptZW.setAttribute('cy', toSvgY(zwIm));
+
+      vecZ.setAttribute('x2', toSvgX(z.re)); vecZ.setAttribute('y2', toSvgY(z.im));
+      vecW.setAttribute('x2', toSvgX(w.re)); vecW.setAttribute('y2', toSvgY(w.im));
+      vecZW.setAttribute('x2', toSvgX(zwRe)); vecZW.setAttribute('y2', toSvgY(zwIm));
+
+      lblZ.setAttribute('x', toSvgX(z.re)+10); lblZ.setAttribute('y', toSvgY(z.im)-10);
+      lblW.setAttribute('x', toSvgX(w.re)+10); lblW.setAttribute('y', toSvgY(w.im)-10);
+      lblZW.setAttribute('x', toSvgX(zwRe)+10); lblZW.setAttribute('y', toSvgY(zwIm)-10);
+
+      const argZ = Math.atan2(z.im, z.re)*180/Math.PI;
+      const argW = Math.atan2(w.im, w.re)*180/Math.PI;
+      const argZW = argZ + argW;
+      const modZ = Math.hypot(z.re,z.im);
+      const modW = Math.hypot(w.re,w.im);
+      const modZW = modZ*modW;
+
+      arcZ.setAttribute('d', arcPath(CX,CY,34, 0, argZ));
+      arcW.setAttribute('d', arcPath(CX,CY,50, argZ, argZ+argW));
+      arcZW.setAttribute('d', arcPath(CX,CY,66, 0, argZW));
+
+      katexOrText(document.getElementById('val-z-mult'), 'z = ' + complexLatex(z.re, z.im));
+      katexOrText(document.getElementById('val-w-mult'), 'w = ' + complexLatex(w.re, w.im));
+      katexOrText(document.getElementById('val-zw-mult'), 'z \\cdot w = ' + complexLatex(zwRe, zwIm));
+
+      katexOrText(document.getElementById('polar-z-mult'), `|z| = ${fmt1(modZ)}, \\ \\arg(z) = ${fmt1(argZ)}^\\circ`);
+      katexOrText(document.getElementById('polar-w-mult'), `|w| = ${fmt1(modW)}, \\ \\arg(w) = ${fmt1(argW)}^\\circ`);
+      katexOrText(document.getElementById('polar-zw-mult'), `|z\\cdot w| = ${fmt1(modZW)}, \\ \\arg(z\\cdot w) = ${fmt1(argZW)}^\\circ`);
+
+      const a=fmt1(z.re), b=fmt1(z.im), c=fmt1(w.re), d=fmt1(w.im);
+      const ac = fmt1(z.re*w.re), ad = fmt1(z.re*w.im), bc = fmt1(z.im*w.re), bd = fmt1(z.im*w.im);
+      const algebraLatex = `\\begin{aligned}
+        (${a} + ${b}i)(${c} + ${d}i) &= ${a}\\cdot${c} + ${a}\\cdot${d}i + ${b}i\\cdot${c} + ${b}i\\cdot${d}i \\\\
+        &= ${ac} + ${ad}i + ${bc}i + ${bd}i^2 \\\\
+        &= ${ac} + ${ad}i + ${bc}i - ${bd} && \\text{(бо } i^2=-1\\text{)} \\\\
+        &= (${ac} - ${bd}) + (${ad} + ${bc})i \\\\
+        &= ${complexLatex(zwRe, zwIm)}
+      \\end{aligned}`;
+      katexOrText(document.getElementById('algebra-steps'), algebraLatex, true);
+
+      katexOrText(document.getElementById('pattern-mod'), `|z\\cdot w| = ${fmt1(modZ)} \\cdot ${fmt1(modW)} = ${fmt1(modZW)}`);
+      katexOrText(document.getElementById('pattern-arg'), `\\arg(z\\cdot w) = ${fmt1(argZ)}^\\circ + ${fmt1(argW)}^\\circ = ${fmt1(argZW)}^\\circ`);
+    }
+
+    function clamp(v){ return Math.max(-4, Math.min(4, v)); }
+    makeDraggable(ptZ, z, svgPoint, (t,p)=>{ t.re = clamp(helpers.toMathX(p.x)); t.im = clamp(helpers.toMathY(p.y)); stopAnim(); render(); });
+    makeDraggable(ptW, w, svgPoint, (t,p)=>{ t.re = clamp(helpers.toMathX(p.x)); t.im = clamp(helpers.toMathY(p.y)); stopAnim(); render(); });
+
+    document.getElementById('btn-reset-mult').addEventListener('click', ()=>{
+      z.re=DEFAULTS.z.re; z.im=DEFAULTS.z.im;
+      w.re=DEFAULTS.w.re; w.im=DEFAULTS.w.im;
+      stopAnim(); render();
+    });
+
+    /* ---- animation: rotate z by arg(w), then scale by |w| ---- */
+    const animVec = document.getElementById('vec-anim-mult');
+    const animPt = document.getElementById('pt-anim-mult');
+    const animCircle = document.getElementById('circle-anim-mult');
+    const animArc = document.getElementById('arc-anim-mult');
+    const animLbl = document.getElementById('lbl-anim-mult');
+    const btnPlay = document.getElementById('mult-play');
+    let animOn = false, animT0 = 0;
+
+    function ease(x){ return x<0.5 ? 2*x*x : 1-Math.pow(-2*x+2,2)/2; }
+    function hideAnim(){
+      [animVec,animPt,animCircle,animArc,animLbl].forEach(el=>el.setAttribute('opacity','0'));
+    }
+    function stopAnim(){
+      animOn=false; btnPlay.textContent='▶ Анімація: поворот, потім розтяг'; hideAnim();
+    }
+    btnPlay.addEventListener('click', ()=>{
+      animOn = !animOn;
+      if(animOn){ animT0 = performance.now(); btnPlay.textContent='⏸ Пауза'; }
+      else stopAnim();
+    });
+
+    document.querySelectorAll('.chip').forEach(ch=>{
+      ch.addEventListener('click', ()=>{ stopAnim(); render(); });
+    });
+
+    function animLoop(now){
+      if(animOn){
+        const t = (now-animT0)/1000;
+        const argW = Math.atan2(w.im, w.re), modW = Math.hypot(w.re, w.im);
+        const argZ = Math.atan2(z.im, z.re), modZ = Math.hypot(z.re, z.im);
+        let g = null;
+        if(t < 1.15){
+          // phase 1: rotate
+          const k = ease(t/1.15);
+          const a = argZ + argW*k;
+          g = {re: modZ*Math.cos(a), im: modZ*Math.sin(a)};
+          animArc.setAttribute('opacity','0.95');
+          animArc.setAttribute('d', arcPath(CX,CY,48, argZ*180/Math.PI, (argZ+argW*k)*180/Math.PI));
+          animCircle.setAttribute('opacity','0');
+          animLbl.setAttribute('opacity','0.95');
+          animLbl.textContent = 'поворот на ' + fmt1(argW*180/Math.PI) + '°';
+          animLbl.setAttribute('x', CX); animLbl.setAttribute('y', CY-58);
+        } else if(t < 2.45){
+          // phase 2: scale
+          const k = ease((t-1.15)/1.3);
+          const a = argZ + argW;
+          const scale = 1 + (modW-1)*k;
+          g = {re: modZ*scale*Math.cos(a), im: modZ*scale*Math.sin(a)};
+          animArc.setAttribute('opacity','0');
+          animCircle.setAttribute('opacity','0.8');
+          animCircle.setAttribute('r', modZ*helpers.scale);
+          animLbl.setAttribute('opacity','0.95');
+          animLbl.textContent = '× ' + fmt1(modW);
+          animLbl.setAttribute('x', (CX+toSvgX(g.re))/2); animLbl.setAttribute('y', (CY+toSvgY(g.im))/2 - 8);
+        } else {
+          stopAnim();
+        }
+        if(g){
+          animVec.setAttribute('opacity','0.95');
+          animVec.setAttribute('x2', toSvgX(g.re)); animVec.setAttribute('y2', toSvgY(g.im));
+          animPt.setAttribute('opacity','0.95');
+          animPt.setAttribute('cx', toSvgX(g.re)); animPt.setAttribute('cy', toSvgY(g.im));
+        }
+      }
+      requestAnimationFrame(animLoop);
+    }
+    requestAnimationFrame(animLoop);
+
+    render();
+  })();
+
+  /* ============ TAB 0: DEFINITIONS ============ */
+  (function(){
+    // number sets diagram
+    [['lbl-N','\\mathbb{N}'],['ex-N','5'],
+     ['lbl-Z','\\mathbb{Z}'],['ex-Z','-3'],
+     ['lbl-Q','\\mathbb{Q}'],['ex-Q','\\tfrac{1}{2}'],
+     ['lbl-R','\\mathbb{R}'],['ex-R','\\sqrt{2}'],
+     ['lbl-C','\\mathbb{C}'],['ex-C','3+2i']
+    ].forEach(([id,latex])=>{
+      const el = document.getElementById(id);
+      if(el) katexOrText(el, latex);
+    });
+
+    // inline definition formulas
+    katexOrText(document.getElementById('def-pair'), '(a,b)');
+    katexOrText(document.getElementById('def-form'), 'z = a+bi');
+    katexOrText(document.getElementById('def-i'), 'i^2=-1');
+    katexOrText(document.getElementById('def-re'), '\\operatorname{Re}z = a');
+    katexOrText(document.getElementById('def-im'), '\\operatorname{Im}z = b');
+
+    // trigonometric form (static)
+    katexOrText(document.getElementById('tri-unit'), 'x=\\cos\\theta,\\ \\ y=\\sin\\theta');
+    katexOrText(document.getElementById('tri-a'), 'a = r\\cos\\theta');
+    katexOrText(document.getElementById('tri-b'), 'b = r\\sin\\theta');
+    katexOrText(document.getElementById('tri-form'), 'z = a+bi = r(\\cos\\theta + i\\sin\\theta)');
+
+    // argument / atan2 explanation
+    katexOrText(document.getElementById('arg-naive'), '\\theta=\\operatorname{arctg}\\tfrac{b}{a}');
+    katexOrText(document.getElementById('arg-ex1'), '1+i');
+    katexOrText(document.getElementById('arg-ex2'), '-1-i');
+    katexOrText(document.getElementById('arg-range'), '(-90^\\circ,\\,90^\\circ)');
+    katexOrText(document.getElementById('arg-atan2'), '\\operatorname{atan2}(b,a)');
+    katexOrText(document.getElementById('arg-full'), '(-180^\\circ,\\,180^\\circ]');
+    katexOrText(document.getElementById('arg-cases'), `\\operatorname{atan2}(b,a)=\\begin{cases}
+      \\operatorname{arctg}\\frac{b}{a}, & a>0 \\quad\\text{(I та IV чверті)}\\\\[4pt]
+      \\operatorname{arctg}\\frac{b}{a}+180^\\circ, & a<0,\\ b\\ge 0 \\quad\\text{(II чверть)}\\\\[4pt]
+      \\operatorname{arctg}\\frac{b}{a}-180^\\circ, & a<0,\\ b<0 \\quad\\text{(III чверть)}\\\\[4pt]
+      \\pm 90^\\circ, & a=0,\\ b\\gtrless 0 \\quad\\text{(на уявній осі)}\\\\[4pt]
+      \\text{не визначено}, & a=0,\\ b=0
+    \\end{cases}`, true);
+    katexOrText(document.getElementById('arg-mod'), '\\theta + 360^\\circ k');
+  })();
+
+  /* modulus / argument / conjugate */
+  (function(){
+    const RANGE = 6;
+    const svg = document.getElementById('svg-def');
+    const helpers = makeCanvasHelpers(RANGE);
+    const svgPoint = svgPointFactory(svg);
+    buildStaticAxes(document.getElementById('grid-def'), document.getElementById('ticks-def'), RANGE, helpers.scale, helpers.toSvgX, helpers.toSvgY);
+    const {toSvgX, toSvgY} = helpers;
+
+    let z = {re:3, im:2};
+    const DEFAULT_Z = {re:3, im:2};
+
+    const ptZ = document.getElementById('pt-z-def');
+    const ptZc = document.getElementById('pt-zc-def');
+    const vecZ = document.getElementById('vec-z-def');
+    const vecZc = document.getElementById('vec-zc-def');
+    const lblZ = document.getElementById('lbl-z-def');
+    const lblZc = document.getElementById('lbl-zc-def');
+    const guideV = document.getElementById('guide-v-def');
+    const guideH = document.getElementById('guide-h-def');
+    const arcZ = document.getElementById('arc-z-def');
+
+    function arcPath(cx,cy,r,startDeg,endDeg){
+      const steps=28; let d='';
+      for(let i=0;i<=steps;i++){
+        const deg = startDeg + (endDeg-startDeg)*(i/steps);
+        const rad = deg*Math.PI/180;
+        const x = cx + r*Math.cos(rad), y = cy - r*Math.sin(rad);
+        d += (i===0?'M':'L') + x.toFixed(2)+','+y.toFixed(2)+' ';
+      }
+      return d;
+    }
+
+    function render(){
+      const zc = {re:z.re, im:-z.im};
+      ptZ.setAttribute('cx', toSvgX(z.re)); ptZ.setAttribute('cy', toSvgY(z.im));
+      ptZc.setAttribute('cx', toSvgX(zc.re)); ptZc.setAttribute('cy', toSvgY(zc.im));
+      vecZ.setAttribute('x2', toSvgX(z.re)); vecZ.setAttribute('y2', toSvgY(z.im));
+      vecZc.setAttribute('x2', toSvgX(zc.re)); vecZc.setAttribute('y2', toSvgY(zc.im));
+      lblZ.setAttribute('x', toSvgX(z.re)+10); lblZ.setAttribute('y', toSvgY(z.im)-10);
+      lblZc.setAttribute('x', toSvgX(zc.re)+10); lblZc.setAttribute('y', toSvgY(zc.im)+18);
+
+      guideV.setAttribute('x1', toSvgX(z.re)); guideV.setAttribute('y1', toSvgY(z.im));
+      guideV.setAttribute('x2', toSvgX(z.re)); guideV.setAttribute('y2', toSvgY(0));
+      guideH.setAttribute('x1', toSvgX(z.re)); guideH.setAttribute('y1', toSvgY(z.im));
+      guideH.setAttribute('x2', toSvgX(0)); guideH.setAttribute('y2', toSvgY(z.im));
+
+      const arg = Math.atan2(z.im,z.re)*180/Math.PI;
+      arcZ.setAttribute('d', arcPath(CX,CY,34,0,arg));
+      const mod = Math.hypot(z.re,z.im);
+
+      katexOrText(document.getElementById('val-z-def'), 'z = ' + complexLatex(z.re,z.im));
+      katexOrText(document.getElementById('val-mod-def'), `|z| = \\sqrt{${fmt1(z.re)}^2+${fmt1(z.im)}^2} = ${fmt1(mod)}`);
+      katexOrText(document.getElementById('val-arg-def'), `\\arg z = \\operatorname{atan2}(${fmt1(z.im)},${fmt1(z.re)}) = ${fmt1(arg)}^\\circ`);
+      katexOrText(document.getElementById('val-conj-def'), '\\bar z = ' + complexLatex(zc.re, zc.im));
+      katexOrText(document.getElementById('val-identity-def'), `z\\cdot\\bar z = |z|^2 = ${fmt1(mod*mod)}`);
+    }
+
+    function clamp(v){ return Math.max(-RANGE+0.3, Math.min(RANGE-0.3, v)); }
+    makeDraggable(ptZ, z, svgPoint, (t,p)=>{ t.re=clamp(helpers.toMathX(p.x)); t.im=clamp(helpers.toMathY(p.y)); render(); });
+
+    document.getElementById('btn-reset-def').addEventListener('click', ()=>{
+      z.re=DEFAULT_Z.re; z.im=DEFAULT_Z.im; render();
+    });
+
+    render();
+  })();
+
+  /* rotation + sin/cos projections (combined single SVG) */
+  (function(){
+    const CXr=200, CYr=200, R=150;
+
+    let theta = 0.8;
+    let playing = false;
+
+    const ptE = document.getElementById('pt-e-rot');
+    const vecE = document.getElementById('vec-e-rot');
+    const arcT = document.getElementById('arc-t-rot');
+    const lblE = document.getElementById('lbl-e-rot');
+    const slider = document.getElementById('slider-theta');
+    const btnPlay = document.getElementById('btn-play-rot');
+
+    const guideToSine = document.getElementById('guide-to-sine');
+    const guideToCos = document.getElementById('guide-to-cos');
+    const markerSine = document.getElementById('marker-sine');
+    const markerCos = document.getElementById('marker-cos');
+    const sineCurve = document.getElementById('sine-curve');
+    const cosCurve = document.getElementById('cos-curve');
+
+    function arcPath(cx,cy,r,startDeg,endDeg){
+      const steps=28; let d='';
+      for(let i=0;i<=steps;i++){
+        const deg = startDeg + (endDeg-startDeg)*(i/steps);
+        const rad = deg*Math.PI/180;
+        const x = cx + r*Math.cos(rad), y = cy - r*Math.sin(rad);
+        d += (i===0?'M':'L') + x.toFixed(2)+','+y.toFixed(2)+' ';
+      }
+      return d;
+    }
+
+    const SX0=420, SX1=595; // sine strip: x = time axis
+    const CY0=420, CY1=595; // cosine strip: y = time axis
+    function sineX(t){ return SX0 + (t/(2*Math.PI))*(SX1-SX0); }
+    function cosYaxis(t){ return CY0 + (t/(2*Math.PI))*(CY1-CY0); }
+
+    function render(){
+      const c = Math.cos(theta), s = Math.sin(theta);
+      const ex = CXr + c*R, ey = CYr - s*R;
+
+      ptE.setAttribute('cx', ex); ptE.setAttribute('cy', ey);
+      vecE.setAttribute('x2', ex); vecE.setAttribute('y2', ey);
+      lblE.setAttribute('x', ex+10); lblE.setAttribute('y', ey-10);
+
+      const degTheta = ((theta*180/Math.PI)%360+360)%360;
+      arcT.setAttribute('d', arcPath(CXr,CYr,30,0,degTheta));
+
+      // progressive curves from 0 to theta
+      const steps=100; let dSin='', dCos='';
+      for(let i=0;i<=steps;i++){
+        const t = theta*(i/steps);
+        dSin += (i===0?'M':'L') + sineX(t).toFixed(1)+','+(CYr-Math.sin(t)*R).toFixed(1)+' ';
+        dCos += (i===0?'M':'L') + (CXr+Math.cos(t)*R).toFixed(1)+','+cosYaxis(t).toFixed(1)+' ';
+      }
+      sineCurve.setAttribute('d', dSin);
+      cosCurve.setAttribute('d', dCos);
+
+      const sineMarkerX = sineX(theta), sineMarkerY = ey; // same height as point
+      const cosMarkerX = ex, cosMarkerY = cosYaxis(theta); // same x as point
+      markerSine.setAttribute('cx', sineMarkerX); markerSine.setAttribute('cy', sineMarkerY);
+      markerCos.setAttribute('cx', cosMarkerX); markerCos.setAttribute('cy', cosMarkerY);
+      guideToSine.setAttribute('x1', ex); guideToSine.setAttribute('y1', ey);
+      guideToSine.setAttribute('x2', sineMarkerX); guideToSine.setAttribute('y2', ey);
+      guideToCos.setAttribute('x1', ex); guideToCos.setAttribute('y1', ey);
+      guideToCos.setAttribute('x2', ex); guideToCos.setAttribute('y2', cosMarkerY);
+
+      document.getElementById('rot-theta-val').textContent = fmt1(theta)+' рад';
+      katexOrText(document.getElementById('val-theta-rot'), `\\theta = ${fmt1(theta)}\\ \\text{рад} \\approx ${fmt1(degTheta)}^\\circ`);
+      katexOrText(document.getElementById('val-cos-rot'), `\\cos\\theta = ${fmt1(c)}`);
+      katexOrText(document.getElementById('val-sin-rot'), `\\sin\\theta = ${fmt1(s)}`);
+    }
+
+    slider.addEventListener('input', e=>{
+      theta = parseFloat(e.target.value);
+      playing = false; btnPlay.textContent = '▶ Пуск';
+      render();
+    });
+    btnPlay.addEventListener('click', ()=>{
+      playing = !playing;
+      btnPlay.textContent = playing ? '⏸ Пауза' : '▶ Пуск';
+    });
+
+    let last = performance.now();
+    function loop(now){
+      const dt = Math.min(0.05,(now-last)/1000); last = now;
+      if(playing){
+        theta = (theta + dt*0.9) % (2*Math.PI);
+        slider.value = theta;
+        render();
+      }
+      requestAnimationFrame(loop);
+    }
+    render();
+    requestAnimationFrame(loop);
+  })();
+
+  /* ============ TAB 3: EULER ============ */
+  (function(){
+    // static derivation block
+    katexOrText(document.getElementById('eu-prop'), "\\left(e^{kx}\\right)' = k\\,e^{kx}");
+    katexOrText(document.getElementById('eu-def'), 'f(\\theta) = \\cos\\theta + i\\sin\\theta');
+    katexOrText(document.getElementById('euler-derivation'), `\\begin{aligned}
+      f(\\theta) &= \\cos\\theta + i\\sin\\theta \\\\
+      f'(\\theta) &= -\\sin\\theta + i\\cos\\theta \\\\
+      &= i\\left(\\cos\\theta + i\\sin\\theta\\right) && \\text{(бо } i\\cdot i\\sin\\theta = -\\sin\\theta\\text{)} \\\\
+      &= i\\cdot f(\\theta)
+    \\end{aligned}`, true);
+    katexOrText(document.getElementById('eu-k'), 'k = i');
+    katexOrText(document.getElementById('eu-init'), 'f(0)=\\cos 0 + i\\sin 0 = 1 = e^{0}');
+    katexOrText(document.getElementById('eu-fname'), 'f(\\theta)');
+    katexOrText(document.getElementById('eu-exp'), 'e^{i\\theta}');
+    katexOrText(document.getElementById('euler-formula'), 'e^{i\\theta} = \\cos\\theta + i\\sin\\theta');
+    katexOrText(document.getElementById('euler-90'), 'e^{i\\pi/2} = \\cos 90^\\circ + i\\sin 90^\\circ = i');
+
+    // exponential form: multiplication and division
+    katexOrText(document.getElementById('exp-form'), 'z_1 = r_1e^{i\\theta_1},\\quad z_2 = r_2e^{i\\theta_2}');
+    katexOrText(document.getElementById('exp-mult'), `\\begin{aligned}
+      z_1z_2 &= r_1e^{i\\theta_1}\\cdot r_2e^{i\\theta_2} \\\\
+      &= r_1r_2\\,e^{i(\\theta_1+\\theta_2)}
+    \\end{aligned}`, true);
+    katexOrText(document.getElementById('exp-div'), `\\begin{aligned}
+      \\frac{z_1}{z_2} &= \\frac{r_1e^{i\\theta_1}}{r_2e^{i\\theta_2}} \\\\
+      &= \\frac{r_1}{r_2}\\,e^{i(\\theta_1-\\theta_2)}
+    \\end{aligned}`, true);
+    katexOrText(document.getElementById('exp-div-alg'),
+      '\\frac{a+bi}{c+di} = \\frac{(a+bi)(c-di)}{(c+di)(c-di)} = \\frac{ac+bd}{c^2+d^2} + \\frac{bc-ad}{c^2+d^2}\\,i', true);
+    katexOrText(document.getElementById('exp-pow'), 'z^{n} = \\left(re^{i\\theta}\\right)^{n} = r^{n}e^{in\\theta}');
+
+    // interactive: f(theta) and its perpendicular derivative
+    (function(){
+      const CXr=200, CYr=200, R=150;
+      let theta = 0.8, playing = false;
+      const ptF = document.getElementById('pt-f-eu');
+      const vecF = document.getElementById('vec-f-eu');
+      const lblF = document.getElementById('lbl-f-eu');
+      const vecFp = document.getElementById('vec-fp-eu');
+      const lblFp = document.getElementById('lbl-fp-eu');
+      const slider = document.getElementById('slider-theta-eu');
+      const btnPlay = document.getElementById('btn-play-eu');
+
+      function render(){
+        const c = Math.cos(theta), s = Math.sin(theta);
+        const fx = CXr + c*R, fy = CYr - s*R;
+        // derivative i*f(theta) = -sin + i cos -> perpendicular, same length R
+        const dc = -s, ds = c;
+        const dx = CXr + dc*R, dy = CYr - ds*R;
+
+        ptF.setAttribute('cx', fx); ptF.setAttribute('cy', fy);
+        vecF.setAttribute('x2', fx); vecF.setAttribute('y2', fy);
+        lblF.setAttribute('x', fx+10); lblF.setAttribute('y', fy-10);
+
+        vecFp.setAttribute('x1', fx); vecFp.setAttribute('y1', fy);
+        vecFp.setAttribute('x2', fx+(dx-CXr)); vecFp.setAttribute('y2', fy+(dy-CYr));
+        lblFp.setAttribute('x', fx+(dx-CXr)+8); lblFp.setAttribute('y', fy+(dy-CYr));
+
+        document.getElementById('eu-theta-val').textContent = fmt1(theta)+' рад';
+        katexOrText(document.getElementById('val-theta-eu'), `\\theta = ${fmt1(theta)}\\ \\text{рад}`);
+        katexOrText(document.getElementById('val-f-eu'), `f(\\theta) = ${complexLatex(c,s)}`);
+        katexOrText(document.getElementById('val-fp-eu'), `f'(\\theta) = ${complexLatex(dc,ds)}`);
+        katexOrText(document.getElementById('val-if-eu'), `i\\cdot f(\\theta) = ${complexLatex(dc,ds)}`);
+      }
+
+      slider.addEventListener('input', e=>{ theta=parseFloat(e.target.value); playing=false; btnPlay.textContent='▶ Пуск'; render(); });
+      btnPlay.addEventListener('click', ()=>{ playing=!playing; btnPlay.textContent = playing?'⏸ Пауза':'▶ Пуск'; });
+      let last=performance.now();
+      function loop(now){
+        const dt=Math.min(0.05,(now-last)/1000); last=now;
+        if(playing){ theta=(theta+dt*0.9)%(2*Math.PI); slider.value=theta; render(); }
+        requestAnimationFrame(loop);
+      }
+      render(); requestAnimationFrame(loop);
+    })();
+
+    // interactive: multiplication as rotation by arbitrary angle
+    (function(){
+      const RANGE = 6;
+      const svg = document.getElementById('svg-rotmul');
+      const helpers = makeCanvasHelpers(RANGE);
+      const svgPoint = svgPointFactory(svg);
+      buildStaticAxes(document.getElementById('grid-rm'), document.getElementById('ticks-rm'), RANGE, helpers.scale, helpers.toSvgX, helpers.toSvgY);
+      const {toSvgX, toSvgY} = helpers;
+
+      let z = {re:3, im:1.5};
+      const DEFAULT_Z = {re:3, im:1.5};
+      let theta = 0.9;
+
+      const ptZ = document.getElementById('pt-z-rm');
+      const vecZ = document.getElementById('vec-z-rm');
+      const lblZ = document.getElementById('lbl-z-rm');
+      const ptZr = document.getElementById('pt-zr-rm');
+      const vecZr = document.getElementById('vec-zr-rm');
+      const lblZr = document.getElementById('lbl-zr-rm');
+      const arc = document.getElementById('arc-rm');
+      const slider = document.getElementById('slider-theta-rm');
+      katexOrText(document.getElementById('lbl-readout-zr'), 'z\\cdot e^{i\\theta}');
+
+      function arcPath(cx,cy,r,startDeg,endDeg){
+        const steps=28; let d='';
+        for(let i=0;i<=steps;i++){
+          const deg = startDeg + (endDeg-startDeg)*(i/steps);
+          const rad = deg*Math.PI/180;
+          const x = cx + r*Math.cos(rad), y = cy - r*Math.sin(rad);
+          d += (i===0?'M':'L') + x.toFixed(2)+','+y.toFixed(2)+' ';
+        }
+        return d;
+      }
+
+      function render(){
+        const phi = Math.atan2(z.im, z.re);
+        const r = Math.hypot(z.re, z.im);
+        const newPhi = phi + theta;
+        const zr = {re: r*Math.cos(newPhi), im: r*Math.sin(newPhi)};
+
+        ptZ.setAttribute('cx', toSvgX(z.re)); ptZ.setAttribute('cy', toSvgY(z.im));
+        vecZ.setAttribute('x2', toSvgX(z.re)); vecZ.setAttribute('y2', toSvgY(z.im));
+        lblZ.setAttribute('x', toSvgX(z.re)+10); lblZ.setAttribute('y', toSvgY(z.im)-10);
+
+        ptZr.setAttribute('cx', toSvgX(zr.re)); ptZr.setAttribute('cy', toSvgY(zr.im));
+        vecZr.setAttribute('x2', toSvgX(zr.re)); vecZr.setAttribute('y2', toSvgY(zr.im));
+        lblZr.setAttribute('x', toSvgX(zr.re)+10); lblZr.setAttribute('y', toSvgY(zr.im)-10);
+
+        arc.setAttribute('d', arcPath(CX,CY,40, phi*180/Math.PI, newPhi*180/Math.PI));
+
+        katexOrText(document.getElementById('val-z-rm'), 'z = ' + complexLatex(z.re,z.im));
+        document.getElementById('rm-theta-val').textContent = fmt1(theta)+' рад';
+        katexOrText(document.getElementById('val-theta-rm'), `\\theta = ${fmt1(theta)}\\ \\text{рад} \\approx ${fmt1(theta*180/Math.PI)}^\\circ`);
+        katexOrText(document.getElementById('val-zr-rm'), 'z\\cdot e^{i\\theta} = ' + complexLatex(zr.re, zr.im));
+      }
+
+      function clamp(v){ return Math.max(-RANGE+0.3, Math.min(RANGE-0.3, v)); }
+      makeDraggable(ptZ, z, svgPoint, (t,p)=>{ t.re=clamp(helpers.toMathX(p.x)); t.im=clamp(helpers.toMathY(p.y)); render(); });
+      slider.addEventListener('input', e=>{ theta=parseFloat(e.target.value); render(); });
+      document.getElementById('btn-reset-rm').addEventListener('click', ()=>{
+        z.re=DEFAULT_Z.re; z.im=DEFAULT_Z.im; theta=0.9; slider.value=theta; render();
+      });
+
+      render();
+    })();
+  })();
+
+  /* ============ TAB 4: MOIVRE ============ */
+  (function(){
+    const RANGE = 6;
+    const svg = document.getElementById('svg-moivre');
+    const helpers = makeCanvasHelpers(RANGE);
+    const svgPoint = svgPointFactory(svg);
+    buildStaticAxes(document.getElementById('grid-mv'), document.getElementById('ticks-mv'), RANGE, helpers.scale, helpers.toSvgX, helpers.toSvgY);
+    const {toSvgX, toSvgY} = helpers;
+
+    katexOrText(document.getElementById('moivre-rule'),
+      'z^{t}=r^{t}\\bigl(\\cos t\\theta+i\\sin t\\theta\\bigr), \\qquad \\sqrt[n]{z}=r^{1/n}e^{i(\\theta+360^\\circ k)/n},\\ k=0..n-1');
+
+    let z = {re:1, im:1};
+    const DEFAULT_Z = {re:1, im:1};
+    let t = 2, n = 3, rootMode = false, playing = false;
+
+    const ptZ = document.getElementById('pt-z-mv');
+    const vecZ = document.getElementById('vec-z-mv');
+    const lblZ = document.getElementById('lbl-z-mv');
+    const ptRes = document.getElementById('pt-res-mv');
+    const vecRes = document.getElementById('vec-res-mv');
+    const lblRes = document.getElementById('lbl-res-mv');
+    const spiral = document.getElementById('spiral-mv');
+    const poly = document.getElementById('poly-mv');
+    const rootsG = document.getElementById('roots-mv');
+    const circleMv = document.getElementById('circle-mv');
+    const arcMv = document.getElementById('arc-mv');
+    const sliderT = document.getElementById('mv-t');
+    const sliderN = document.getElementById('mv-n');
+    const btnPlay = document.getElementById('mv-play');
+    const hintEl = document.getElementById('hint-mv');
+
+    function arcPath(cx,cy,r,a0,a1){
+      const steps=40; let d='';
+      for(let i=0;i<=steps;i++){
+        const a = a0 + (a1-a0)*(i/steps);
+        d += (i===0?'M':'L') + (cx+r*Math.cos(a)).toFixed(2)+','+(cy-r*Math.sin(a)).toFixed(2)+' ';
+      }
+      return d;
+    }
+    function cpow(zz, tt){
+      const r = Math.hypot(zz.re, zz.im), th = Math.atan2(zz.im, zz.re);
+      const rp = Math.pow(r, tt), ap = th*tt;
+      return {re: rp*Math.cos(ap), im: rp*Math.sin(ap)};
+    }
+
+    function render(){
+      const r = Math.hypot(z.re,z.im), th = Math.atan2(z.im,z.re);
+
+      ptZ.setAttribute('cx', toSvgX(z.re)); ptZ.setAttribute('cy', toSvgY(z.im));
+      vecZ.setAttribute('x2', toSvgX(z.re)); vecZ.setAttribute('y2', toSvgY(z.im));
+      lblZ.setAttribute('x', toSvgX(z.re)+10); lblZ.setAttribute('y', toSvgY(z.im)-10);
+      arcMv.setAttribute('d', arcPath(CX,CY,26,0,th));
+
+      katexOrText(document.getElementById('val-z-mv'),
+        `z = ${fmt1(r)}\\,e^{i\\,${fmt1(th*180/Math.PI)}^\\circ}`);
+
+      if(!rootMode){
+        circleMv.setAttribute('r', 0);
+        poly.setAttribute('d','');
+        rootsG.innerHTML='';
+        ptRes.style.display=''; vecRes.style.display='';
+
+        // spiral path from z^0 to z^t
+        let d='';
+        for(let i=0;i<=200;i++){
+          const q = cpow(z, t*i/200);
+          d += (i===0?'M':'L') + toSvgX(q.re).toFixed(1)+','+toSvgY(q.im).toFixed(1)+' ';
+        }
+        spiral.setAttribute('d', d);
+
+        const q = cpow(z, t);
+        ptRes.setAttribute('cx', toSvgX(q.re)); ptRes.setAttribute('cy', toSvgY(q.im));
+        vecRes.setAttribute('x2', toSvgX(q.re)); vecRes.setAttribute('y2', toSvgY(q.im));
+        lblRes.setAttribute('x', toSvgX(q.re)+10); lblRes.setAttribute('y', toSvgY(q.im)-10);
+        lblRes.textContent = 'z^'+fmt1(t);
+
+        document.getElementById('mv-t-val').textContent = fmt1(t);
+        katexOrText(document.getElementById('val-res-mv'),
+          `z^{${fmt1(t)}} = ${fmt1(Math.pow(r,t))}\\,e^{i\\,${fmt1(t*th*180/Math.PI)}^\\circ} = ${complexLatex(q.re,q.im)}`);
+        hintEl.textContent = 'Перетягніть z. Кораловий слід — траєкторія z^t, коли показник плавно росте від 0 до t: модуль підноситься до степеня, кут множиться.';
+      } else {
+        spiral.setAttribute('d','');
+        ptRes.style.display='none'; vecRes.style.display='none';
+        lblRes.textContent='';
+
+        const rr = Math.pow(r, 1/n);
+        circleMv.setAttribute('r', rr*helpers.scale);
+
+        const pts=[];
+        for(let k=0;k<n;k++){
+          const a = th/n + k*2*Math.PI/n;
+          pts.push({re: rr*Math.cos(a), im: rr*Math.sin(a)});
+        }
+        let d='';
+        pts.forEach((q,i)=>{ d += (i===0?'M':'L') + toSvgX(q.re).toFixed(1)+','+toSvgY(q.im).toFixed(1)+' '; });
+        d += 'Z';
+        poly.setAttribute('d', d);
+
+        rootsG.innerHTML='';
+        pts.forEach((q,k)=>{
+          const c = document.createElementNS(svgNS,'circle');
+          c.setAttribute('cx', toSvgX(q.re)); c.setAttribute('cy', toSvgY(q.im));
+          c.setAttribute('r', k===0?7:5.5);
+          c.setAttribute('fill', k===0?'var(--coral)':'var(--teal)');
+          c.setAttribute('stroke','var(--panel)'); c.setAttribute('stroke-width','1.8');
+          rootsG.appendChild(c);
+          const tx = document.createElementNS(svgNS,'text');
+          tx.setAttribute('x', toSvgX(q.re)+9); tx.setAttribute('y', toSvgY(q.im)-9);
+          tx.setAttribute('fill', k===0?'var(--coral)':'var(--teal)');
+          tx.setAttribute('font-size','12'); tx.setAttribute('font-style','italic');
+          tx.textContent = 'z'+k;
+          rootsG.appendChild(tx);
+        });
+
+        document.getElementById('mv-n-val').textContent = n;
+        katexOrText(document.getElementById('val-res-mv'),
+          `z_k = ${fmt1(rr)}\\,e^{i(${fmt1(th*180/Math.PI)}^\\circ + 360^\\circ k)/${n}}`);
+        hintEl.textContent = 'Перетягніть z. Усі n коренів лежать на одному колі радіуса r^(1/n) і ділять його на рівні частини — тому вони завжди утворюють правильний n-кутник.';
+      }
+    }
+
+    function setMode(isRoot){
+      rootMode = isRoot;
+      document.getElementById('mv-ctl-t').style.display = isRoot?'none':'flex';
+      document.getElementById('mv-ctl-n').style.display = isRoot?'flex':'none';
+      playing = false; btnPlay.textContent='▶ Програти';
+      render();
+    }
+    document.getElementById('mv-pow').addEventListener('change', ()=>setMode(false));
+    document.getElementById('mv-root').addEventListener('change', ()=>setMode(true));
+
+    sliderT.addEventListener('input', e=>{ t=parseFloat(e.target.value); playing=false; btnPlay.textContent='▶ Програти'; render(); });
+    sliderN.addEventListener('input', e=>{ n=parseInt(e.target.value); render(); });
+    btnPlay.addEventListener('click', ()=>{
+      if(playing){ playing=false; btnPlay.textContent='▶ Програти'; }
+      else { t=0; sliderT.value=0; playing=true; btnPlay.textContent='⏸ Пауза'; }
+      render();
+    });
+
+    function clamp(v){ return Math.max(-RANGE+0.3, Math.min(RANGE-0.3, v)); }
+    makeDraggable(ptZ, z, svgPoint, (tt,p)=>{
+      tt.re=clamp(helpers.toMathX(p.x)); tt.im=clamp(helpers.toMathY(p.y));
+      playing=false; btnPlay.textContent='▶ Програти';
+      render();
+    });
+    document.getElementById('mv-reset').addEventListener('click', ()=>{
+      z.re=DEFAULT_Z.re; z.im=DEFAULT_Z.im; render();
+    });
+
+    let last=performance.now();
+    function loop(now){
+      const dt=Math.min(0.05,(now-last)/1000); last=now;
+      if(playing && !rootMode){
+        t = Math.min(4, t + dt*0.9);
+        sliderT.value = t;
+        if(t>=4){ playing=false; btnPlay.textContent='▶ Програти'; }
+        render();
+      }
+      requestAnimationFrame(loop);
+    }
+    render(); requestAnimationFrame(loop);
+  })();
+
+  /* ============ TAB 5: GAME ============ */
+  (function(){
+    const svg = document.getElementById('svg-game');
+    const svgPoint = svgPointFactory(svg);
+    const KS = [1,2,3,4];
+    const COLORS = ['var(--gold)','var(--teal)','var(--coral)','var(--slate)'];
+    const PLANE_R = 62;
+    const planesG = document.getElementById('game-planes');
+    const wavesG = document.getElementById('game-waves');
+    const targetPath = document.getElementById('game-target');
+    const userPath = document.getElementById('game-user');
+
+    let target = null, user = null, showHint = false, dragIdx = -1;
+
+    function planeCenter(i){ return {x: 100, y: 95 + i*143}; }
+
+    function newTarget(){
+      target = KS.map(k=>({k, A: 0.35+Math.random()*0.6, phi: Math.random()*2*Math.PI}));
+      reset();
+    }
+    function reset(){
+      user = KS.map(k=>({k, c:{re:0, im:0}}));
+      render();
+    }
+    function fUser(t){
+      return user.reduce((v,u)=> v + Math.hypot(u.c.re,u.c.im)*Math.sin(u.k*t + Math.atan2(u.c.im,u.c.re)), 0);
+    }
+    function fTarget(t){
+      return target.reduce((v,g)=> v + g.A*Math.sin(g.k*t + g.phi), 0);
+    }
+    function similarity(){
+      let num=0, den=0;
+      for(let i=0;i<=200;i++){
+        const t = 2*Math.PI*i/200, a=fUser(t), b=fTarget(t);
+        num += Math.abs(a-b); den += Math.abs(a)+Math.abs(b);
+      }
+      return den>0 ? 1-num/den : 1;
+    }
+
+    function render(){
+      // small complex planes with draggable coefficient points
+      planesG.innerHTML=''; wavesG.innerHTML='';
+      user.forEach((u,i)=>{
+        const c = planeCenter(i);
+        const col = COLORS[i];
+
+        const circ = document.createElementNS(svgNS,'circle');
+        circ.setAttribute('cx',c.x); circ.setAttribute('cy',c.y); circ.setAttribute('r',PLANE_R);
+        circ.setAttribute('fill','none'); circ.setAttribute('stroke','var(--border)'); circ.setAttribute('stroke-width','1.2');
+        planesG.appendChild(circ);
+        [[c.x-PLANE_R,c.y,c.x+PLANE_R,c.y],[c.x,c.y-PLANE_R,c.x,c.y+PLANE_R]].forEach(([x1,y1,x2,y2])=>{
+          const l = document.createElementNS(svgNS,'line');
+          l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2);
+          l.setAttribute('stroke','var(--border)'); l.setAttribute('stroke-width','0.8');
+          planesG.appendChild(l);
+        });
+
+        const kLbl = document.createElementNS(svgNS,'text');
+        kLbl.setAttribute('x', c.x-PLANE_R); kLbl.setAttribute('y', c.y-PLANE_R-8);
+        kLbl.setAttribute('fill', col); kLbl.setAttribute('font-size','12'); kLbl.setAttribute('font-style','italic');
+        kLbl.textContent = 'c'+u.k;
+        planesG.appendChild(kLbl);
+
+        if(showHint){
+          const g = target[i];
+          const hx = c.x + Math.cos(g.phi)*PLANE_R, hy = c.y - Math.sin(g.phi)*PLANE_R;
+          const hl = document.createElementNS(svgNS,'line');
+          hl.setAttribute('x1',c.x); hl.setAttribute('y1',c.y); hl.setAttribute('x2',hx); hl.setAttribute('y2',hy);
+          hl.setAttribute('stroke','var(--axis)'); hl.setAttribute('stroke-width','1.2'); hl.setAttribute('stroke-dasharray','3 4');
+          planesG.appendChild(hl);
+        }
+
+        const px = c.x + u.c.re*PLANE_R, py = c.y - u.c.im*PLANE_R;
+        const vl = document.createElementNS(svgNS,'line');
+        vl.setAttribute('x1',c.x); vl.setAttribute('y1',c.y); vl.setAttribute('x2',px); vl.setAttribute('y2',py);
+        vl.setAttribute('stroke',col); vl.setAttribute('stroke-width','2');
+        planesG.appendChild(vl);
+        const pt = document.createElementNS(svgNS,'circle');
+        pt.setAttribute('cx',px); pt.setAttribute('cy',py); pt.setAttribute('r',9);
+        pt.setAttribute('fill',col); pt.setAttribute('stroke','var(--panel)'); pt.setAttribute('stroke-width','2');
+        pt.setAttribute('style','cursor:grab');
+        pt.dataset.idx = i;
+        planesG.appendChild(pt);
+
+        // this harmonic's contribution wave
+        const A = Math.hypot(u.c.re,u.c.im), ph = Math.atan2(u.c.im,u.c.re);
+        const wx0=190, wx1=495, wy=c.y, amp=46;
+        let d='';
+        for(let s=0;s<=120;s++){
+          const t = 2*Math.PI*s/120;
+          const x = wx0 + (wx1-wx0)*s/120;
+          const y = wy - A*Math.sin(u.k*t+ph)*amp;
+          d += (s===0?'M':'L') + x.toFixed(1)+','+y.toFixed(1)+' ';
+        }
+        const wp = document.createElementNS(svgNS,'path');
+        wp.setAttribute('d',d); wp.setAttribute('fill','none');
+        wp.setAttribute('stroke',col); wp.setAttribute('stroke-width','1.8');
+        wavesG.appendChild(wp);
+        const base = document.createElementNS(svgNS,'line');
+        base.setAttribute('x1',wx0); base.setAttribute('y1',wy); base.setAttribute('x2',wx1); base.setAttribute('y2',wy);
+        base.setAttribute('stroke','var(--border)'); base.setAttribute('stroke-width','0.8');
+        wavesG.appendChild(base);
+      });
+
+      // big comparison plot
+      const bx0=550, bx1=880, by=310, bamp=115;
+      let dT='', dU='';
+      for(let s=0;s<=240;s++){
+        const t = 2*Math.PI*s/240;
+        const x = bx0 + (bx1-bx0)*s/240;
+        dT += (s===0?'M':'L') + x.toFixed(1)+','+(by - fTarget(t)/3*bamp).toFixed(1)+' ';
+        dU += (s===0?'M':'L') + x.toFixed(1)+','+(by - fUser(t)/3*bamp).toFixed(1)+' ';
+      }
+      targetPath.setAttribute('d', dT);
+      userPath.setAttribute('d', dU);
+
+      const sim = similarity(), pct = Math.round(sim*100);
+      document.getElementById('game-pct').textContent = pct+' %';
+      document.getElementById('game-bar').style.width = Math.max(0,Math.min(100,pct))+'%';
+      document.getElementById('game-ok').style.display = sim>=0.93 ? 'block' : 'none';
+    }
+
+    // dragging on the whole svg (points are recreated each render)
+    svg.addEventListener('pointerdown', e=>{
+      const p = svgPoint(e);
+      let best=-1, bd=1e9;
+      user.forEach((u,i)=>{
+        const c = planeCenter(i);
+        const d = Math.hypot(c.x-p.x, c.y-p.y);
+        if(d < PLANE_R+22 && d < bd){ bd=d; best=i; }
+      });
+      if(best>=0){ dragIdx=best; svg.setPointerCapture(e.pointerId); }
+    });
+    svg.addEventListener('pointermove', e=>{
+      if(dragIdx<0) return;
+      const p = svgPoint(e);
+      const c = planeCenter(dragIdx);
+      let re = (p.x-c.x)/PLANE_R, im = (c.y-p.y)/PLANE_R;
+      const m = Math.hypot(re,im);
+      if(m>1.3){ re = re*1.3/m; im = im*1.3/m; }
+      user[dragIdx].c = {re, im};
+      render();
+    });
+    ['pointerup','pointercancel'].forEach(ev=> svg.addEventListener(ev, ()=>{ dragIdx=-1; }));
+
+    katexOrText(document.getElementById('game-formula'),
+      'c_k=A_ke^{i\\varphi_k}\\;\\Rightarrow\\;\\text{вклад}=A_k\\sin(kt+\\varphi_k), \\qquad f(t)=\\sum_{k=1}^{4}A_k\\sin(kt+\\varphi_k)');
+
+    document.getElementById('game-new').addEventListener('click', newTarget);
+    document.getElementById('game-reset').addEventListener('click', reset);
+    document.getElementById('game-hint').addEventListener('change', e=>{ showHint=e.target.checked; render(); });
+
+    newTarget();
+  })();
+
+  /* ============ TAB 6: APPLICATIONS ============ */
+  (function(){
+    // 16-QAM constellation
+    const g = document.getElementById('qam-points');
+    const levels = [-3,-1,1,3];
+    levels.forEach(a=>levels.forEach(b=>{
+      const x = 160 + a*32, y = 160 - b*32;
+      const c = document.createElementNS(svgNS,'circle');
+      c.setAttribute('cx',x); c.setAttribute('cy',y); c.setAttribute('r',6);
+      c.setAttribute('fill','var(--teal)'); c.setAttribute('opacity','0.85');
+      g.appendChild(c);
+      const l = document.createElementNS(svgNS,'line');
+      l.setAttribute('x1',160); l.setAttribute('y1',160); l.setAttribute('x2',x); l.setAttribute('y2',y);
+      l.setAttribute('stroke','var(--teal)'); l.setAttribute('stroke-width','0.6'); l.setAttribute('opacity','0.25');
+      g.insertBefore(l, g.firstChild);
+    }));
+
+    // Mandelbrot set
+    const canvas = document.getElementById('canvas-mandel');
+    const ctx = canvas.getContext('2d');
+    const N = 320, img = ctx.createImageData(N,N), d = img.data;
+    const ccx=-0.6, ccy=0, h=1.4;
+    let idx=0;
+    for(let j=0;j<N;j++) for(let i=0;i<N;i++){
+      const x0 = ccx + ((i+0.5)/N-0.5)*2*h, y0 = ccy + (0.5-(j+0.5)/N)*2*h;
+      let zx=0, zy=0, zx2=0, zy2=0, it=0;
+      while(it<90 && zx2+zy2<16){ zy=2*zx*zy+y0; zx=zx2-zy2+x0; zx2=zx*zx; zy2=zy*zy; it++; }
+      let r,gg,b;
+      if(it>=90){ r=23; gg=31; b=46; }
+      else {
+        const u = it/90;
+        r = Math.round(255*(0.25+0.72*Math.pow(u,0.45)));
+        gg = Math.round(255*(0.42+0.50*Math.pow(u,0.75)));
+        b = Math.round(255*(0.55+0.40*Math.pow(1-u,0.6)));
+      }
+      d[idx++]=r; d[idx++]=gg; d[idx++]=b; d[idx++]=255;
+    }
+    ctx.putImageData(img,0,0);
+
+    // --- Digital filter: |H(f)| Butterworth-like rolloff ---
+    {
+      const gx=30, gw=285, gy=200, gh=170, fc=0.35;
+      let d='';
+      for(let i=0;i<=140;i++){
+        const t=i/140, Hf = 1/Math.sqrt(1+Math.pow(t/fc,6));
+        d += (i===0?'M':'L') + (gx+t*gw).toFixed(1)+','+(gy-Hf*gh).toFixed(1)+' ';
+      }
+      document.getElementById('filter-curve').setAttribute('d', d);
+    }
+
+    // --- Quantum wave packet: Re, Im, |psi|^2 ---
+    {
+      const gx=20, gw=300, gy=150, gh=62;
+      const env = t=>Math.exp(-Math.pow((t-0.5)*3.4,2));
+      const curve = fn=>{
+        let d='';
+        for(let i=0;i<=200;i++){
+          const t=i/200;
+          d += (i===0?'M':'L') + (gx+t*gw).toFixed(1)+','+(gy-fn(t)*gh).toFixed(1)+' ';
+        }
+        return d;
+      };
+      document.getElementById('quantum-re').setAttribute('d', curve(t=>env(t)*Math.cos(t*26)));
+      document.getElementById('quantum-im').setAttribute('d', curve(t=>env(t)*Math.sin(t*26)));
+      let dp = 'M'+gx+','+gy+' ';
+      for(let i=0;i<=200;i++){
+        const t=i/200, e=env(t);
+        dp += 'L' + (gx+t*gw).toFixed(1)+','+(gy-e*e*gh*1.55).toFixed(1)+' ';
+      }
+      dp += 'L'+(gx+gw)+','+gy+' Z';
+      document.getElementById('quantum-prob').setAttribute('d', dp);
+    }
+
+    // --- OFDM: overlapping orthogonal sinc subcarriers ---
+    {
+      const g2 = document.getElementById('ofdm-curves');
+      const gx=20, gw=300, gy=200, gh=150;
+      const spacing = 34, count = 7, center = 170;
+      const palette = ['#B8790E','#0E8C86','#C93862','#5F6D8C','#7B4FC0','#1F9D5B','#C2681A'];
+      const sinc = x => Math.abs(x)<1e-6 ? 1 : Math.sin(Math.PI*x)/(Math.PI*x);
+      for(let k=0;k<count;k++){
+        const f0 = center + (k-(count-1)/2)*spacing;
+        const col = palette[k % palette.length];
+        let d='';
+        for(let i=0;i<=240;i++){
+          const x = gx + (i/240)*gw;
+          const v = Math.abs(sinc((x-f0)/spacing));
+          d += (i===0?'M':'L') + x.toFixed(1)+','+(gy-v*gh).toFixed(1)+' ';
+        }
+        const path = document.createElementNS(svgNS,'path');
+        path.setAttribute('d', d); path.setAttribute('fill','none');
+        path.setAttribute('stroke', col);
+        path.setAttribute('stroke-width','1.7');
+        path.setAttribute('opacity','0.85');
+        g2.appendChild(path);
+        const tick = document.createElementNS(svgNS,'circle');
+        tick.setAttribute('cx', f0); tick.setAttribute('cy', gy-gh);
+        tick.setAttribute('r','3.2');
+        tick.setAttribute('fill', col);
+        g2.appendChild(tick);
+      }
+    }
+
+    // --- RLC circuit schematic + impedance vector diagram ---
+    {
+      const cg = document.getElementById('impedance-circuit');
+      const mk = (tag, attrs)=>{
+        const e = document.createElementNS(svgNS, tag);
+        for(const k in attrs) e.setAttribute(k, attrs[k]);
+        cg.appendChild(e); return e;
+      };
+      const y = 46, x0 = 30, x1 = 310;
+      // wire segments between components
+      const segs = [[x0,70],[110,150],[190,230],[270,x1]];
+      segs.forEach(([a,b])=> mk('line',{x1:a,y1:y,x2:b,y2:y,stroke:'var(--axis)','stroke-width':1.6}));
+      // resistor (zigzag)
+      let zz = 'M70,'+y+' ';
+      for(let i=0;i<6;i++) zz += 'L'+(74+i*6.5)+','+(y+(i%2?7:-7))+' ';
+      zz += 'L110,'+y;
+      mk('path',{d:zz,fill:'none',stroke:'var(--slate)','stroke-width':2});
+      mk('text',{x:90,y:y-14,fill:'var(--slate)','font-size':11,'text-anchor':'middle'}).textContent='R';
+      // inductor (coils)
+      let cl = 'M150,'+y+' ';
+      for(let i=0;i<4;i++) cl += 'a5,5 0 0 1 10,0 ';
+      cl += 'L190,'+y;
+      mk('path',{d:cl,fill:'none',stroke:'var(--teal)','stroke-width':2});
+      mk('text',{x:170,y:y-16,fill:'var(--teal)','font-size':11,'text-anchor':'middle'}).textContent='L';
+      // capacitor (two plates)
+      mk('line',{x1:232,y1:y-11,x2:232,y2:y+11,stroke:'var(--coral)','stroke-width':2.2});
+      mk('line',{x1:240,y1:y-11,x2:240,y2:y+11,stroke:'var(--coral)','stroke-width':2.2});
+      mk('line',{x1:230,y1:y,x2:232,y2:y,stroke:'var(--coral)','stroke-width':1.6});
+      mk('line',{x1:240,y1:y,x2:242,y2:y,stroke:'var(--coral)','stroke-width':1.6});
+      mk('text',{x:236,y:y-18,fill:'var(--coral)','font-size':11,'text-anchor':'middle'}).textContent='C';
+      mk('text',{x:170,y:22,fill:'var(--muted)','font-size':10.5,'text-anchor':'middle'}).textContent='послідовне RLC-коло';
+
+      // vector diagram below
+      const g3 = document.getElementById('impedance-marks');
+      const add = (tag, attrs, text)=>{
+        const e = document.createElementNS(svgNS, tag);
+        for(const k in attrs) e.setAttribute(k, attrs[k]);
+        if(text!==undefined) e.textContent = text;
+        g3.appendChild(e); return e;
+      };
+      const ox=90, oy=195, sc=46;
+      add('line',{x1:30,y1:oy,x2:320,y2:oy,stroke:'var(--axis)','stroke-width':1});
+      add('line',{x1:ox,y1:280,x2:ox,y2:100,stroke:'var(--axis)','stroke-width':1});
+      add('text',{x:314,y:oy+14,fill:'var(--muted)','font-size':11,'text-anchor':'end'},'Re (R)');
+      add('text',{x:ox+7,y:108,fill:'var(--muted)','font-size':11},'Im (X)');
+
+      const R=2.4, XL=1.7, XC=0.9; // net reactance = +0.8 (inductive)
+      // R along real axis
+      add('line',{x1:ox,y1:oy,x2:ox+R*sc,y2:oy,stroke:'var(--slate)','stroke-width':2.4});
+      add('text',{x:ox+R*sc/2,y:oy+16,fill:'var(--slate)','font-size':10.5,'text-anchor':'middle'},'R');
+      // +iX_L up from tip of R
+      add('line',{x1:ox+R*sc,y1:oy,x2:ox+R*sc,y2:oy-XL*sc,stroke:'var(--teal)','stroke-width':2.4});
+      add('text',{x:ox+R*sc+7,y:oy-XL*sc/2,fill:'var(--teal)','font-size':10.5},'+iωL  (+90°)');
+      // -iX_C down from there
+      add('line',{x1:ox+R*sc,y1:oy-XL*sc,x2:ox+R*sc,y2:oy-(XL-XC)*sc,stroke:'var(--coral)','stroke-width':2.4});
+      add('text',{x:ox+R*sc+7,y:oy-(XL-XC/2)*sc+4,fill:'var(--coral)','font-size':10.5},'−i/ωC  (−90°)');
+      // resulting Z
+      const zx=ox+R*sc, zy=oy-(XL-XC)*sc;
+      add('line',{x1:ox,y1:oy,x2:zx,y2:zy,stroke:'var(--gold)','stroke-width':3});
+      add('circle',{cx:zx,cy:zy,r:5,fill:'var(--gold)',stroke:'var(--panel)','stroke-width':1.6});
+      add('text',{x:zx-16,y:zy-10,fill:'var(--gold)','font-size':11.5,'font-style':'italic'},'Z');
+      // phase arc
+      const ang = Math.atan2(oy-zy, zx-ox);
+      let ad='';
+      for(let i=0;i<=24;i++){
+        const a = ang*i/24;
+        ad += (i===0?'M':'L') + (ox+34*Math.cos(a)).toFixed(1)+','+(oy-34*Math.sin(a)).toFixed(1)+' ';
+      }
+      add('path',{d:ad,fill:'none',stroke:'var(--gold)','stroke-width':1.5});
+      add('text',{x:ox+42,y:oy-12,fill:'var(--gold)','font-size':10.5},'arg Z');
+    }
+  })();
+
+  /* ============ TABS NAV ============ */
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const panes = {
+    zero: document.getElementById('tab-zero'),
+    plane: document.getElementById('tab-plane'),
+    mult: document.getElementById('tab-mult'),
+    euler: document.getElementById('tab-euler'),
+    moivre: document.getElementById('tab-moivre'),
+    game: document.getElementById('tab-game'),
+    apps: document.getElementById('tab-apps')
+  };
+  tabButtons.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(btn.classList.contains('disabled')) return;
+      tabButtons.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      Object.values(panes).forEach(p=>p.style.display='none');
+      panes[btn.dataset.tab].style.display='block';
+    });
+  });
+})();
+</script>
+</body>
+</html>
