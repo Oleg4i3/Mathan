@@ -237,7 +237,7 @@
       <circle cx="46" cy="30" r="2.6"></circle>
     </svg>
     <h1>Комплексні числа</h1>
-    <p class="subtitle">20 задач: модуль, аргумент, добуток, частка, степінь, форми запису та корені комплексних рівнянь.</p>
+    <p class="subtitle">Задачі: модуль, аргумент, добуток, частка, степінь, форми запису та корені комплексних рівнянь (у т.ч. за формулою Муавра). Числа в умовах генеруються випадково — кожна спроба відрізняється.</p>
     <button id="startBtn">Старт</button>
   </header>
 
@@ -263,169 +263,427 @@
 </div>
 
 <script>
-const questions = [
-  {
-    type: 'num',
-    prompt: "Дано <b>z = 6 + 8i</b>. Знайдіть модуль спряженого числа z̄, тобто |z̄|.",
+// ===== ГЕНЕРАТОРИ ЗАДАЧ (рандомізація в розумних межах; цілі відповіді лишаються цілими) =====
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+function pick(arr){ return arr[rnd(0, arr.length - 1)]; }
+function reduceAngle(t){ let r = t; while (r <= -180) r += 360; while (r > 180) r -= 360; return r; }
+function signNum(v){ return v < 0 ? '−' + Math.abs(v) : String(v); }
+function fmtComplexInt(a, b){ return `${signNum(a)} ${b < 0 ? '−' : '+'} ${Math.abs(b)}i`; }
+function surdTerm(k, surd){ if (!surd) return String(k); return k === 1 ? '√3' : `${k}√3`; }
+function surd2Term(k){ return k === 1 ? '√2' : `${k}√2`; }
+const SUP = {2:'²',3:'³',4:'⁴',5:'⁵',6:'⁶',7:'⁷',8:'⁸',9:'⁹'};
+
+// ---- таблиця "діагональних" напрямків (для алгебраїчних z = k·(...), масштабованих цілим k) ----
+const ANGLES12 = [
+  {angle:45,  reC:1,reSurd:false,reSign:1, imC:1,imSurd:false,imSign:1, fam:'r2'},
+  {angle:135, reC:1,reSurd:false,reSign:-1,imC:1,imSurd:false,imSign:1, fam:'r2'},
+  {angle:-45, reC:1,reSurd:false,reSign:1, imC:1,imSurd:false,imSign:-1,fam:'r2'},
+  {angle:-135,reC:1,reSurd:false,reSign:-1,imC:1,imSurd:false,imSign:-1,fam:'r2'},
+  {angle:30,  reC:1,reSurd:true, reSign:1, imC:1,imSurd:false,imSign:1, fam:'std'},
+  {angle:150, reC:1,reSurd:true, reSign:-1,imC:1,imSurd:false,imSign:1, fam:'std'},
+  {angle:-30, reC:1,reSurd:true, reSign:1, imC:1,imSurd:false,imSign:-1,fam:'std'},
+  {angle:-150,reC:1,reSurd:true, reSign:-1,imC:1,imSurd:false,imSign:-1,fam:'std'},
+  {angle:60,  reC:1,reSurd:false,reSign:1, imC:1,imSurd:true, imSign:1, fam:'std'},
+  {angle:120, reC:1,reSurd:false,reSign:-1,imC:1,imSurd:true, imSign:1, fam:'std'},
+  {angle:-60, reC:1,reSurd:false,reSign:1, imC:1,imSurd:true, imSign:-1,fam:'std'},
+  {angle:-120,reC:1,reSurd:false,reSign:-1,imC:1,imSurd:true, imSign:-1,fam:'std'},
+];
+const AXIS4 = [
+  {angle:0,  reC:1,reSurd:false,reSign:1,imC:0,imSurd:false,imSign:1, fam:'axis'},
+  {angle:90, reC:0,reSurd:false,reSign:1,imC:1,imSurd:false,imSign:1, fam:'axis'},
+  {angle:180,reC:1,reSurd:false,reSign:-1,imC:0,imSurd:false,imSign:1,fam:'axis'},
+  {angle:-90,reC:0,reSurd:false,reSign:1,imC:1,imSurd:false,imSign:-1,fam:'axis'},
+];
+function algebraicStr(e, k){
+  let s = '';
+  if (e.reC !== 0) { s += (e.reSign < 0 ? '-' : '') + surdTerm(k, e.reSurd); }
+  if (e.imC !== 0) {
+    let mag = surdTerm(k, e.imSurd);
+    if (mag === '1') mag = '';
+    if (s === '') { s = (e.imSign < 0 ? '-' : '') + mag + 'i'; }
+    else { s += (e.imSign < 0 ? '-' : '+') + mag + 'i'; }
+  }
+  return s || '0';
+}
+
+// ---- таблиця точок одиничного кола (для Re[e^{iθ}] і 1/z типу задач) ----
+const UNIT16 = [
+ {angle:0,   reStr:'1',     imStr:'0',    reNum:1,              imNum:0},
+ {angle:30,  reStr:'√3/2',  imStr:'1/2',  reNum:Math.sqrt(3)/2, imNum:0.5},
+ {angle:45,  reStr:'√2/2',  imStr:'√2/2', reNum:Math.SQRT2/2,   imNum:Math.SQRT2/2},
+ {angle:60,  reStr:'1/2',   imStr:'√3/2', reNum:0.5,            imNum:Math.sqrt(3)/2},
+ {angle:90,  reStr:'0',     imStr:'1',    reNum:0,              imNum:1},
+ {angle:120, reStr:'-1/2',  imStr:'√3/2', reNum:-0.5,           imNum:Math.sqrt(3)/2},
+ {angle:135, reStr:'-√2/2', imStr:'√2/2', reNum:-Math.SQRT2/2,  imNum:Math.SQRT2/2},
+ {angle:150, reStr:'-√3/2', imStr:'1/2',  reNum:-Math.sqrt(3)/2,imNum:0.5},
+ {angle:180, reStr:'-1',    imStr:'0',    reNum:-1,             imNum:0},
+ {angle:-30, reStr:'√3/2',  imStr:'-1/2', reNum:Math.sqrt(3)/2, imNum:-0.5},
+ {angle:-45, reStr:'√2/2',  imStr:'-√2/2',reNum:Math.SQRT2/2,   imNum:-Math.SQRT2/2},
+ {angle:-60, reStr:'1/2',   imStr:'-√3/2',reNum:0.5,            imNum:-Math.sqrt(3)/2},
+ {angle:-90, reStr:'0',     imStr:'-1',   reNum:0,              imNum:-1},
+ {angle:-120,reStr:'-1/2',  imStr:'-√3/2',reNum:-0.5,           imNum:-Math.sqrt(3)/2},
+ {angle:-135,reStr:'-√2/2', imStr:'-√2/2',reNum:-Math.SQRT2/2,  imNum:-Math.SQRT2/2},
+ {angle:-150,reStr:'-√3/2', imStr:'-1/2', reNum:-Math.sqrt(3)/2,imNum:-0.5},
+];
+const PI_FRAC = {0:'0',30:'π/6',45:'π/4',60:'π/3',90:'π/2',120:'2π/3',135:'3π/4',150:'5π/6',180:'π',
+  '-30':'−π/6','-45':'−π/4','-60':'−π/3','-90':'−π/2','-120':'−2π/3','-135':'−3π/4','-150':'−5π/6'};
+function unitAlgStr(e){
+  let s = '';
+  if (e.reStr !== '0') s += e.reStr;
+  if (e.imStr !== '0') {
+    const neg = e.imStr.startsWith('-');
+    let mag = neg ? e.imStr.slice(1) : e.imStr;
+    if (mag === '1') mag = '';
+    else if (mag.includes('/')) mag = `(${mag})`;
+    if (s === '') s = (neg ? '-' : '') + mag + 'i';
+    else s += (neg ? '-' : '+') + mag + 'i';
+  }
+  return s || '0';
+}
+function scaleFracStr(fracStr, M){
+  if (fracStr === '0') return '0';
+  const neg = fracStr.startsWith('-');
+  const body = neg ? fracStr.slice(1) : fracStr;
+  let out;
+  if (!body.includes('/')) { out = M * (neg ? -1 : 1); return String(out); }
+  const [num, den] = body.split('/');
+  const half = M / Number(den);
+  const magStr = num === '1' ? String(half) : (half === 1 ? num : `${half}${num}`);
+  return (neg ? '-' : '') + magStr;
+}
+function axisDesc(angle){
+  return { 0:'додатній дійсній півосі', 180:"від'ємній дійсній півосі", 90:'додатній уявній півосі', '-90':"від'ємній уявній півосі" }[angle];
+}
+
+// 1) |z̄| через піфагорову трійку
+const PYTHAG = [[3,4,5],[6,8,10],[5,12,13],[8,15,17],[7,24,25],[9,12,15],[20,21,29],[12,16,20],[9,40,41],[10,24,26],[12,35,37],[15,20,25]];
+function genPythagZ(excludeIdx){
+  let idx; do { idx = rnd(0, PYTHAG.length - 1); } while (idx === excludeIdx);
+  const t = PYTHAG[idx];
+  const swap = pick([true, false]);
+  const legA = swap ? t[1] : t[0], legB = swap ? t[0] : t[1];
+  const a = legA * pick([1,-1]), b = legB * pick([1,-1]);
+  return { idx, a, b, c: t[2] };
+}
+function genQ1(){
+  const z = genPythagZ(-1);
+  return {
+    type:'num',
+    prompt: `Дано <b>z = ${fmtComplexInt(z.a,z.b)}</b>. Знайдіть модуль спряженого числа z̄, тобто |z̄|.`,
     hint: "z̄ відрізняється лише знаком уявної частини; це не впливає на суму квадратів дійсної та уявної частин.",
-    expected: 10, tol: 0.01,
-    display: "10",
-    explain: "z̄ = 6 − 8i, і |z̄| = √(6²+8²) = √100 = 10 — той самий модуль, що й у z, оскільки |z̄| = |z| завжди."
-  },
-  {
-    type: 'num',
-    prompt: "Дано <b>z = 5 − 12i</b>. Знайдіть |z|.",
-    hint: "5, 12, 13 — піфагорова трійка.",
-    expected: 13, tol: 0.01,
-    display: "13",
-    explain: "|z| = √(5²+12²) = √169 = 13."
-  },
-  {
-    type: 'num',
-    prompt: "Дано <b>z = √3 + i</b>. Знайдіть arg(z) у градусах.",
-    hint: "tan(θ) = 1/√3, z у першій чверті.",
-    expected: 30, tol: 0.5,
-    display: "30°",
-    explain: "tan(θ) = 1/√3 ⇒ θ = 30°, і точка справді лежить у першій чверті."
-  },
-  {
-    type: 'num',
+    expected: z.c, tol: 0.01,
+    display: String(z.c),
+    explain: `z̄ = ${fmtComplexInt(z.a,-z.b)}, і |z̄| = √(${Math.abs(z.a)}²+${Math.abs(z.b)}²) = √${z.a*z.a+z.b*z.b} = ${z.c} — той самий модуль, що й у z, оскільки |z̄| = |z| завжди.`,
+    _excludeIdx: z.idx
+  };
+}
+function genQ2(excludeIdx){
+  const z = genPythagZ(excludeIdx);
+  return {
+    type:'num',
+    prompt: `Дано <b>z = ${fmtComplexInt(z.a,z.b)}</b>. Знайдіть |z|.`,
+    hint: `${Math.abs(z.a)}, ${Math.abs(z.b)}, ${z.c} — піфагорова трійка.`,
+    expected: z.c, tol: 0.01,
+    display: String(z.c),
+    explain: `|z| = √(${Math.abs(z.a)}²+${Math.abs(z.b)}²) = √${z.a*z.a+z.b*z.b} = ${z.c}.`
+  };
+}
+
+// 3) arg(z) для "табличного" кута
+function genQ3(){
+  const e = pick(ANGLES12), k = rnd(1,3);
+  const zStr = algebraicStr(e,k);
+  return {
+    type:'num',
+    prompt: `Дано <b>z = ${zStr}</b>. Знайдіть arg(z) у градусах (з проміжку (−180°, 180°]).`,
+    hint: `Зобразіть z на комплексній площині й визначте, під яким табличним кутом до дійсної осі лежить вектор.`,
+    expected: e.angle, tol: 0.5,
+    display: `${e.angle}°`,
+    explain: `Дійсна й уявна частини z відповідають табличним значенням cos і sin, звідки arg(z) = ${e.angle}°.`
+  };
+}
+
+// 4) концептуальне питання — параметрів для рандомізації немає, лишаємо без змін
+function genQ4(){
+  return {
+    type:'num',
     prompt: "Комплексне число z дорівнює своєму спряженому, z = z̄. Чому дорівнює <b>додатний</b> (тобто більший за нуль) аргумент такого числа, у градусах?",
     hint: "З рівності z = z̄ випливає, що z — дійсне число. У дійсного числа можливі лише два значення аргументу: 0° або 180°.",
     expected: 180, tol: 0.5,
     display: "180°",
     explain: "z = z̄ означає, що уявна частина z дорівнює нулю, тобто z — дійсне число. Аргумент дійсного додатного числа дорівнює 0°, а від'ємного — 180°. Оскільки 0° не є додатним значенням, єдиний можливий додатний аргумент — 180° (він відповідає від'ємним дійсним числам)."
-  },
-  {
-    type: 'num',
-    prompt: "Дано <b>z = 2 + 3i</b>. Знайдіть arg(z) у радіанах, з точністю до 3 знаків після коми.",
-    hint: "Кут тут не є 'табличним' значенням — знадобиться arctan(3/2) на калькуляторі.",
-    expected: Math.atan2(3,2), tol: 0.003,
-    display: "≈ 0.983",
-    explain: "arg(z) = arctan(3/2) ≈ 0.9828 рад — приклад кута, що не виражається через прості дроби числа π."
-  },
-  {
-    type: 'num',
-    prompt: "z₁ = 4(cos40° + i·sin40°), z₂ = 5(cos25° + i·sin25°). Знайдіть |z₁·z₂|.",
+  };
+}
+
+// 5) arg у градусах, не табличний кут (наближено, із заданою точністю)
+function genQ5(){
+  let a,b; do { a = rnd(2,9); b = rnd(2,9); } while (a === b);
+  const val = Math.atan2(b,a) * 180/Math.PI;
+  return {
+    type:'num',
+    prompt: `Дано <b>z = ${a} + ${b}i</b>. Знайдіть arg(z) у градусах, з точністю до 2 знаків після коми.`,
+    hint: `Кут тут не є 'табличним' значенням — знадобиться arctan(${b}/${a}) на калькуляторі (результат переведіть у градуси).`,
+    expected: val, tol: 0.05,
+    display: `≈ ${val.toFixed(2)}°`,
+    explain: `arg(z) = arctan(${b}/${a}) ≈ ${val.toFixed(3)}° — приклад кута, що не є табличним значенням.`
+  };
+}
+
+// 6-7) добуток: |z1 z2| і arg(z1 z2) — пов'язана пара
+function genZ1Z2(){ return { m1: rnd(2,9), m2: rnd(2,9), t1: rnd(5,85), t2: rnd(5,85) }; }
+function genQ6(p){
+  return {
+    type:'num',
+    prompt: `z₁ = ${p.m1}(cos${p.t1}° + i·sin${p.t1}°), z₂ = ${p.m2}(cos${p.t2}° + i·sin${p.t2}°). Знайдіть |z₁·z₂|.`,
     hint: "Модулі при множенні перемножуються.",
-    expected: 20, tol: 0.01,
-    display: "20",
-    explain: "|z₁·z₂| = 4·5 = 20."
-  },
-  {
-    type: 'num',
+    expected: p.m1*p.m2, tol: 0.01,
+    display: String(p.m1*p.m2),
+    explain: `|z₁·z₂| = ${p.m1}·${p.m2} = ${p.m1*p.m2}.`
+  };
+}
+function genQ7(p){
+  const s = p.t1+p.t2;
+  return {
+    type:'num',
     prompt: "Для тих самих z₁, z₂ знайдіть arg(z₁·z₂) у градусах.",
     hint: "Аргументи при множенні додаються.",
-    expected: 65, tol: 0.5,
-    display: "65°",
-    explain: "arg(z₁·z₂) = 40° + 25° = 65°."
-  },
-  {
-    type: 'complex',
-    prompt: "Обчисліть <b>(3 + 4i) / (1 − 2i)</b> і запишіть результат в алгебраїчній формі (наприклад: -1+2i).",
-    hint: "Домножте чисельник і знаменник на число, спряжене до знаменника: (1+2i).",
-    expectedRe: -1, expectedIm: 2, tol: 0.01,
-    display: "−1 + 2i",
-    explain: "(3+4i)(1+2i) / ((1−2i)(1+2i)) = (3+6i+4i+8i²)/5 = (3+10i−8)/5 = (−5+10i)/5 = −1+2i."
-  },
-  {
-    type: 'text',
-    prompt: "Яка фігура задається рівнянням <b>|z| = 9</b> на комплексній площині?",
+    expected: s, tol: 0.5,
+    display: `${s}°`,
+    explain: `arg(z₁·z₂) = ${p.t1}° + ${p.t2}° = ${s}°.`
+  };
+}
+
+// 8) ділення — гарантовано цілий результат
+function genQ8(){
+  let p,q,re,im;
+  do { p = rnd(-4,4); q = rnd(-4,4); } while (p===0 || q===0);
+  do { re = rnd(-3,3); im = rnd(-3,3); } while (re===0 && im===0);
+  const numRe = re*p - im*q, numIm = re*q + im*p;
+  const D = p*p+q*q;
+  const crossRe = numRe*p + numIm*q, crossIm = numIm*p - numRe*q;
+  return {
+    type:'complex',
+    prompt: `Обчисліть <b>(${fmtComplexInt(numRe,numIm)}) / (${fmtComplexInt(p,q)})</b> і запишіть результат в алгебраїчній формі (наприклад: -1+2i).`,
+    hint: `Домножте чисельник і знаменник на число, спряжене до знаменника: (${fmtComplexInt(p,-q)}).`,
+    expectedRe: re, expectedIm: im, tol: 0.01,
+    display: fmtComplexInt(re,im),
+    explain: `(${fmtComplexInt(numRe,numIm)})(${fmtComplexInt(p,-q)}) / ((${fmtComplexInt(p,q)})(${fmtComplexInt(p,-q)})) = (${signNum(crossRe)} ${crossIm<0?'−':'+'} ${Math.abs(crossIm)}i) / ${D} = ${fmtComplexInt(re,im)}.`
+  };
+}
+
+// 9) коло |z|=r
+function genQ9(){
+  const r = rnd(2,20);
+  return {
+    type:'text',
+    prompt: `Яка фігура задається рівнянням <b>|z| = ${r}</b> на комплексній площині?`,
     hint: "|z| — це відстань від точки z до початку координат.",
     accepted: ['коло'],
-    display: "коло радіуса 9 з центром у початку координат",
-    explain: "|z| = 9 означає, що відстань від z до точки 0 стала і дорівнює 9 — це геометричне означення кола."
-  },
-  {
-    type: 'num',
-    prompt: "Знайдіть головне значення arg[(cos50° + i·sin50°)⁷] у градусах (з проміжку (−180°, 180°]).",
-    hint: "Спершу порахуйте 7·50°, а потім зведіть результат до потрібного проміжку, віднявши 360°.",
-    expected: -10, tol: 0.5,
-    display: "−10°",
-    explain: "7·50° = 350°, що еквівалентно 350° − 360° = −10° у головному проміжку."
-  },
-  {
-    type: 'num',
-    prompt: "Знайдіть Re[e<sup>i·2π/3</sup>].",
-    hint: "e<sup>iθ</sup> = cos θ + i·sin θ; тут θ = 2π/3 = 120°.",
-    expected: -0.5, tol: 0.01,
-    display: "−0.5",
-    explain: "Re[e<sup>i·2π/3</sup>] = cos(120°) = −0.5."
-  },
-  {
-    type: 'complex',
+    display: `коло радіуса ${r} з центром у початку координат`,
+    explain: `|z| = ${r} означає, що відстань від z до точки 0 стала і дорівнює ${r} — це геометричне означення кола.`
+  };
+}
+
+// 10) степінь у тригонометричній формі + зведення аргументу
+function genQ10(){
+  const theta = rnd(5,175), n = rnd(3,9);
+  const raw = theta*n, red = reduceAngle(raw);
+  return {
+    type:'num',
+    prompt: `Знайдіть головне значення arg[(cos${theta}° + i·sin${theta}°)${SUP[n]}] у градусах (з проміжку (−180°, 180°]).`,
+    hint: `Спершу порахуйте ${n}·${theta}° = ${raw}°, а потім зведіть результат до проміжку (−180°, 180°].`,
+    expected: red, tol: 0.5,
+    display: `${red}°`,
+    explain: `${n}·${theta}° = ${raw}°, що при зведенні до проміжку (−180°,180°] дає ${red}°.`
+  };
+}
+
+// 11) Re[e^{iθ}] на одиничному колі — відповідь лише десятковим числом
+function genQ11(){
+  const e = pick(UNIT16);
+  const isWhole = Number.isInteger(e.reNum);
+  const dec = isWhole ? String(e.reNum) : e.reNum.toFixed(2);
+  return {
+    type:'num',
+    prompt: `Знайдіть Re[e<sup>i·${PI_FRAC[e.angle]}</sup>]. Якщо число нецілe, округліть до 2 знаків після коми.`,
+    hint: `e<sup>iθ</sup> = cos θ + i·sin θ; тут θ = ${PI_FRAC[e.angle]} = ${e.angle}°. Обчисліть cos(${e.angle}°) як десятковий дріб.`,
+    expected: e.reNum, tol: 0.01,
+    display: dec,
+    explain: `Re[e<sup>i·${PI_FRAC[e.angle]}</sup>] = cos(${e.angle}°) = ${e.reStr}${isWhole ? '' : ` ≈ ${dec}`}.`
+  };
+}
+
+// 12-13) обернене до одиничного числа — пов'язана пара (алгебраїчна й показникова форма)
+const AXIS4U = UNIT16.filter(e => [90,-90].includes(e.angle)); // лише i та −i
+function genQ1213Base(){
+  const e = pick(AXIS4U);
+  const recAngle = reduceAngle(-e.angle);
+  const rec = AXIS4U.find(u => u.angle === recAngle);
+  return { e, rec };
+}
+function genQ12(p){
+  const z0 = unitAlgStr(p.e), recStr = unitAlgStr(p.rec);
+  const dispExtra = p.rec.reNum === 0 ? ` (тобто 0 ${p.rec.imNum<0?'−':'+'} ${Math.abs(p.rec.imNum)}i)` : '';
+  return {
+    type:'complex',
     placeholder: "a+bi",
-    prompt: "Чому дорівнює <b>1/i</b> в алгебраїчній формі (a+bi)?",
-    hint: "Домножте чисельник і знаменник на i: 1/i = i/i².",
-    expectedRe: 0, expectedIm: -1, tol: 0.01,
-    display: "−i (тобто 0 − i)",
-    explain: "1/i = i/i² = i/(−1) = −i."
-  },
-  {
-    type: 'num',
-    prompt: "Запишіть 1/i у показниковій формі r·e<sup>iθ</sup>. Чому дорівнює θ у радіанах (з проміжку (−π, π])?",
-    hint: "r тут дорівнює 1, а число −i лежить на від'ємній уявній півосі.",
-    expected: -Math.PI/2, tol: 0.01,
-    display: "−π/2",
-    explain: "1/i = −i = 1·e<sup>−iπ/2</sup>, тобто θ = −π/2."
-  },
-  {
-    type: 'num',
-    prompt: "Дано <b>z = 10</b>. Чому дорівнює спряжене число z̄?",
+    prompt: `Чому дорівнює <b>1/(${z0})</b> в алгебраїчній формі (a+bi)?`,
+    hint: "Скористайтесь тим, що для z з |z|=1 виконується 1/z = z̄ (спряжене число) — достатньо змінити знак уявної частини.",
+    expectedRe: p.rec.reNum, expectedIm: p.rec.imNum, tol: 0.01,
+    display: `${recStr}${dispExtra}`,
+    explain: `1/z = z̄ для |z| = 1, а z̄ отримуємо зміною знака уявної частини: ${z0} → ${recStr}.`
+  };
+}
+function genQ13(p){
+  const z0 = unitAlgStr(p.e), recStr = unitAlgStr(p.rec);
+  return {
+    type:'num',
+    prompt: `Запишіть 1/(${z0}) у показниковій формі r·e<sup>iθ</sup>. Чому дорівнює θ у градусах (з проміжку (−180°, 180°])?`,
+    hint: `r тут дорівнює 1, а число ${recStr} лежить на ${axisDesc(p.rec.angle)}.`,
+    expected: p.rec.angle, tol: 0.5,
+    display: `${p.rec.angle}°`,
+    explain: `1/(${z0}) = ${recStr} = 1·e<sup>i·${p.rec.angle}°</sup>, тобто θ = ${p.rec.angle}°.`
+  };
+}
+
+// 14) спряжене дійсного числа
+function genQ14(){
+  let v; do { v = rnd(-20,20); } while (v===0);
+  return {
+    type:'num',
+    prompt: `Дано <b>z = ${v}</b>. Чому дорівнює спряжене число z̄?`,
     hint: "Дійсна частина не змінюється, а уявна частина у дійсного числа дорівнює нулю.",
-    expected: 10, tol: 0.01,
-    display: "10",
-    explain: "Для будь-якого дійсного числа z̄ = z, оскільки уявна частина дорівнює 0, і міняти в ній знак нічого."
-  },
-  {
-    type: 'set',
-    prompt: "Знайдіть аргументи (у градусах) усіх 5 коренів рівняння <b>x⁵ = i</b>. Перелічіть через кому (порядок не важливий).",
-    hint: "i = e<sup>i·90°</sup>. Корені: (90° + 360°k)/5 для k = 0, 1, 2, 3, 4.",
-    expectedSet: [18, 90, 162, 234, 306], tol: 0.5,
-    display: "18°, 90°, 162°, 234°, 306°",
-    explain: "θ_k = (90° + 360°k)/5: при k=0..4 отримуємо 18°, 90°, 162°, 234°, 306° — усі корені мають модуль 1."
-  },
-  {
-    type: 'num',
-    prompt: "Дано <b>z = 2·e<sup>i·5π/6</sup></b>. Знайдіть Re(z) (можна з коренем, наприклад -sqrt(3)).",
-    hint: "Re(z) = |z|·cos(arg z); 5π/6 = 150°.",
-    expected: -Math.sqrt(3), tol: 0.02,
-    display: "−√3 ≈ −1.732",
-    explain: "Re(z) = 2·cos(150°) = 2·(−√3/2) = −√3."
-  },
-  {
-    type: 'num',
-    prompt: "Знайдіть суму аргументів (у градусах) усіх коренів рівняння <b>z² = −i</b>.",
-    hint: "−i = e<sup>−i·90°</sup>. Корені: (−90° + 360°k)/2 для k = 0, 1. Порахуйте кожен аргумент окремо, а потім додайте їх.",
-    expected: 90, tol: 0.5,
-    display: "90°",
-    explain: "Корені мають аргументи (−90°+360°·0)/2 = −45° і (−90°+360°·1)/2 = 135°. Сума: −45° + 135° = 90°."
-  },
-  {
-    type: 'num',
-    prompt: "Дано <b>z = 1 + i</b>. Знайдіть |z⁸|.",
-    hint: "Спершу знайдіть |z|, а потім піднесіть результат до 8-го степеня.",
-    expected: 16, tol: 0.01,
-    display: "16",
-    explain: "|z| = √2, тому |z⁸| = (√2)⁸ = 2⁴ = 16."
-  },
-  {
-    type: 'num',
-    prompt: "Для того самого z = 1 + i знайдіть головне значення arg(z⁸) у градусах (з проміжку (−180°, 180°]).",
-    hint: "arg(z) = 45°; помножте на 8 і зведіть результат до потрібного проміжку.",
-    expected: 0, tol: 0.5,
-    display: "0°",
-    explain: "8·45° = 360°, що еквівалентно повному оберту, тобто головне значення дорівнює 0°."
-  },
-  {
-    type: 'set',
-    prompt: "Знайдіть аргументи (у градусах) усіх коренів рівняння <b>x³ = −1</b>. Перелічіть через кому.",
-    hint: "−1 = e<sup>i·180°</sup>. Корені: (180° + 360°k)/3 для k = 0, 1, 2.",
-    expectedSet: [60, 180, 300], tol: 0.5,
-    display: "60°, 180°, 300°",
-    explain: "θ_k = (180° + 360°k)/3: при k=0,1,2 отримуємо 60°, 180°, 300°."
-  }
+    expected: v, tol: 0.01,
+    display: String(v),
+    explain: `Для будь-якого дійсного числа z̄ = z = ${v}, оскільки уявна частина дорівнює 0, і міняти в ній знак нічого.`
+  };
+}
+
+// 16) Re(z) для z = M·e^{iθ} — відповідь лише десятковим числом
+function genQ16(){
+  const e = pick(UNIT16), M = pick([2,4,6]);
+  const val = M*e.reNum;
+  const str = scaleFracStr(e.reStr, M); // лишається тільки для пояснення (точна форма)
+  const isWhole = Number.isInteger(val);
+  const dec = isWhole ? String(val) : val.toFixed(2);
+  return {
+    type:'num',
+    prompt: `Дано <b>z = ${M}·e<sup>i·${PI_FRAC[e.angle]}</sup></b>. Знайдіть Re(z). Якщо число нецілe, округліть до 2 знаків після коми.`,
+    hint: `Re(z) = |z|·cos(arg z); ${PI_FRAC[e.angle]} = ${e.angle}°. Порахуйте як десятковий дріб.`,
+    expected: val, tol: 0.02,
+    display: dec,
+    explain: `Re(z) = ${M}·cos(${e.angle}°) = ${M}·(${e.reStr}) = ${str}${isWhole ? '' : ` ≈ ${dec}`}.`
+  };
+}
+
+// 18-19) степінь в алгебраїчній формі — модуль і аргумент — пов'язана пара
+function genPowerBase(){
+  const pool = ANGLES12.concat(AXIS4);
+  const e = pick(pool);
+  let k,n;
+  if (e.fam === 'r2') { k = rnd(1,2); n = pick([2,4,6,8]); }
+  else { k = rnd(1,3); n = rnd(2,6); }
+  const zStr = algebraicStr(e,k);
+  const modStr = e.fam==='r2' ? surd2Term(k) : (e.fam==='std' ? String(2*k) : String(k));
+  const modPow = e.fam==='r2' ? Math.round(Math.pow(k,n)*Math.pow(2,n/2)) : Math.round(Math.pow(e.fam==='std'?2*k:k, n));
+  const argRaw = e.angle*n, argRed = reduceAngle(argRaw);
+  return { e,k,n,zStr,modStr,modPow,argRaw,argRed };
+}
+function genQ18(p){
+  return {
+    type:'num',
+    prompt: `Дано <b>z = ${p.zStr}</b>. Знайдіть |z${SUP[p.n]}|.`,
+    hint: `Спершу знайдіть |z|, а потім піднесіть результат до ${p.n}-го степеня.`,
+    expected: p.modPow, tol: 0.01,
+    display: String(p.modPow),
+    explain: `|z| = ${p.modStr}, тому |z${SUP[p.n]}| = (${p.modStr})${SUP[p.n]} = ${p.modPow}.`
+  };
+}
+function genQ19(p){
+  return {
+    type:'num',
+    prompt: "Для того самого z, знайдіть головне значення arg(z" + SUP[p.n] + ") у градусах (з проміжку (−180°, 180°]).",
+    hint: `arg(z) = ${p.e.angle}°; помножте на ${p.n} і зведіть результат до потрібного проміжку.`,
+    expected: p.argRed, tol: 0.5,
+    display: `${p.argRed}°`,
+    explain: `${p.n}·${p.e.angle}° = ${p.argRaw}°, що при зведенні до проміжку (−180°,180°] дає ${p.argRed}°.`
+  };
+}
+
+// ==== НОВІ ЗАДАЧІ НА ФОРМУЛУ МУАВРА (розв'язування рівнянь xⁿ = a+bi) ====
+function genMoivreBase(){
+  const e = pick(ANGLES12), k = rnd(1,4), n = pick([3,5]);
+  const rhs = algebraicStr(e,k);
+  const rootsRaw = [];
+  for (let j=0;j<n;j++) rootsRaw.push(reduceAngle((e.angle+360*j)/n));
+  return { e,k,n,rhs,rootsRaw };
+}
+function sumExpr(arr){ return arr.map((v,i)=> i===0?String(v):(v<0?`− ${Math.abs(v)}`:`+ ${v}`)).join(' '); }
+function genMoivreSet(){
+  const {e,n,rhs,rootsRaw} = genMoivreBase();
+  return {
+    type:'set',
+    prompt: `Розв'яжіть рівняння <b>x${SUP[n]} = ${rhs}</b>. Знайдіть аргументи (у градусах) усіх ${n} коренів. Перелічіть через кому (порядок не важливий).`,
+    hint: `Спершу запишіть праву частину в тригонометричній формі — її аргумент дорівнює ${e.angle}°. За формулою Муавра аргументи коренів: (${e.angle}° + 360°·j)/${n} для j = 0, 1, ..., ${n-1}; зведіть кожен до проміжку (−180°, 180°].`,
+    expectedSet: rootsRaw.slice(), tol: 0.5,
+    display: rootsRaw.map(a=>a+'°').join(', '),
+    explain: `Аргумент правої частини — ${e.angle}°. Аргументи коренів: ${rootsRaw.map((a,j)=>`(${e.angle}°+360°·${j})/${n}=${a}°`).join('; ')}.`
+  };
+}
+function genMoivreSum(){
+  const {e,n,rhs,rootsRaw} = genMoivreBase();
+  const sum = rootsRaw.reduce((a,b)=>a+b,0);
+  return {
+    type:'num',
+    prompt: `Розв'яжіть рівняння <b>x${SUP[n]} = ${rhs}</b> і знайдіть суму аргументів (у градусах) усіх ${n} коренів (кожен аргумент беріть із проміжку (−180°, 180°]).`,
+    hint: `Аргумент правої частини дорівнює ${e.angle}°. Знайдіть за формулою Муавра всі ${n} аргументів коренів, зведіть кожен до проміжку (−180°,180°], і лише тоді додайте.`,
+    expected: sum, tol: 0.5,
+    display: `${sum}°`,
+    explain: `Аргументи коренів: ${rootsRaw.join('°, ')}°. Сума: ${sumExpr(rootsRaw)} = ${sum}°.`
+  };
+}
+function genMoivreCount(){
+  const {e,n,rhs,rootsRaw} = genMoivreBase();
+  const upper = rootsRaw.filter(a=>a>0 && a<180);
+  return {
+    type:'num',
+    prompt: `Розв'яжіть рівняння <b>x${SUP[n]} = ${rhs}</b>. Скільки з ${n} коренів мають аргумент у проміжку (0°, 180°) — тобто лежать у верхній півплощині (не на дійсній осі)?`,
+    hint: `Знайдіть за формулою Муавра всі ${n} аргументів коренів (кожен зведений до проміжку (−180°,180°]), а потім порахуйте, скільки з них строго більші за 0° і строго менші за 180°.`,
+    expected: upper.length, tol: 0.01,
+    display: String(upper.length),
+    explain: `Аргументи коренів: ${rootsRaw.join('°, ')}°. У проміжку (0°,180°) лежать: ${upper.length ? upper.join('°, ')+'°' : 'жодного'}. Отже, таких коренів — ${upper.length}.`
+  };
+}
+
+// ==== збірка масиву питань у початковому порядку ====
+const q1 = genQ1();
+const z1z2 = genZ1Z2();
+const q1213 = genQ1213Base();
+const powAB = genPowerBase();
+
+const questions = [
+  q1,
+  genQ2(q1._excludeIdx),
+  genQ3(),
+  genQ4(),
+  genQ5(),
+  genQ6(z1z2),
+  genQ7(z1z2),
+  genQ8(),
+  genQ9(),
+  genQ10(),
+  genQ11(),
+  genQ12(q1213),
+  genQ13(q1213),
+  genQ14(),
+  genMoivreSet(),
+  genQ16(),
+  genMoivreSum(),
+  genQ18(powAB),
+  genQ19(powAB),
+  genMoivreCount()
 ];
+delete q1._excludeIdx;
 
 const state = questions.map(() => ({ hintUsed: false, answered: false }));
 
