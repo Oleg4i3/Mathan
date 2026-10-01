@@ -154,7 +154,7 @@
       <line class="vec2" x1="10" y1="66" x2="34" y2="46"></line>
     </svg>
     <h1>Лінійна алгебра</h1>
-    <p class="subtitle">15 задач: скалярний добуток і ортогональність, множення матриці на вектор, норми, визначник, обернена матриця, власні числа й вектори, матриця як лінійний оператор. Числа в умовах генеруються випадково — кожна спроба відрізняється; усі відповіді цілі або раціональні (власні числа — цілі або комплексні з цілими частинами).</p>
+    <p class="subtitle">15 задач: скалярний добуток і ортогональність, множення матриці на вектор, розклад у базисі, системи лінійних рівнянь (правило Крамера), норми, визначник, обернена матриця, власні числа й вектори, матриця як лінійний оператор. Числа в умовах генеруються випадково — кожна спроба відрізняється; усі відповіді цілі або раціональні (власні числа — цілі або комплексні з цілими частинами).</p>
     <p class="format-note">Формат відповіді: число або дріб (<code>3/5</code>, <code>-7</code>, <code>0.6</code> — десятковий дріб із крапкою або комою). Якщо відповідь складається з кількох чисел — запишіть їх через кому в порядку, вказаному в умові; скільки їх має бути, визначайте самі. Комплексні числа: <code>2+3i</code>, <code>-i</code>; пару спряжених можна скорочено: <code>2±3i</code>.</p>
     <button id="startBtn">Старт</button>
   </header>
@@ -205,6 +205,23 @@ function vc(a){ return pm(a.map(x => [x])); }
 function randMat(r, c, lo, hi){ return Array.from({length:r}, () => Array.from({length:c}, () => rnd(lo, hi))); }
 function mulMV(A, x){ return A.map(row => row.reduce((s, a, j) => s + a * x[j], 0) + 0); }
 function det2(m){ return m[0][0]*m[1][1] - m[0][1]*m[1][0]; }
+function detN(A){
+  const n = A.length;
+  if (n === 1) return A[0][0];
+  let t = 0;
+  for (let j = 0; j < n; j++){
+    const minor = A.slice(1).map(r => r.filter((_, k) => k !== j));
+    t += (j % 2 ? -1 : 1) * A[0][j] * detN(minor);
+  }
+  return t + 0;
+}
+function eqTex(a, b, c){
+  const coef = (k, v) => (k === 1 ? '' : (k === -1 ? '-' : String(k))) + v;
+  let t = '';
+  if (a !== 0) t += coef(a, 'x');
+  if (b !== 0) t += (t === '' ? coef(b, 'y') : (b < 0 ? '-' : '+') + coef(Math.abs(b), 'y'));
+  return `${t}=${c}`;
+}
 function dotTex(a, b){ return a.map((v, i) => `${paren(v)}${BS}cdot ${paren(b[i])}`).join(' + '); }
 function linTex(c, S, v){ // c·v + S
   const cs = c === 1 ? '' : (c === -1 ? '-' : String(c));
@@ -224,7 +241,9 @@ const TOPIC = {
   mv:   'Множення матриці на вектор',
   norm: 'Норми, визначник, обернена матриця',
   eig:  'Власні числа й власні вектори',
-  op:   'Матриця як лінійний оператор'
+  op:   'Матриця як лінійний оператор',
+  sys:  'Системи лінійних рівнянь',
+  basis:'Базис і розклад вектора'
 };
 
 // ===================== ТЕМА 1: СКАЛЯРНИЙ ДОБУТОК, ОРТОГОНАЛЬНІСТЬ =====================
@@ -558,9 +577,116 @@ function genDetSignMCQ(){
   };
 }
 
+// ===================== ДОДАТКОВІ ТИПИ (випадково замінюють Q4, Q5, Q7) =====================
+// A) скільки розв'язків має система 2×2 (правило Крамера); рядки коефіцієнтів ненульові, тому Δ, Δx, Δy визначають випадок повністю
+const SYS_OPTS = [
+  `0 розв'язків`,
+  `1 розв'язок`,
+  `2 розв'язки`,
+  `3 розв'язки`,
+  `Безліч розв'язків`,
+  `Неможливо визначити, не розв'язуючи систему`
+];
+function genSysCount(){
+  const kind = pick([0, 1, 2]);      // 0 — немає розв'язків, 1 — один, 2 — безліч
+  let a1, b1, a2, b2, c1, c2;
+  if (kind === 1){
+    const N4 = [-4,-3,-2,-1,1,2,3,4], N6 = [-6,-5,-4,-3,-2,-1,1,2,3,4,5,6];      // жодних нульових коефіцієнтів і вільних членів
+    do { a1 = pick(N4); b1 = pick(N4); a2 = pick(N4); b2 = pick(N4); }
+    while (a1*b2 - a2*b1 === 0);
+    c1 = pick(N6); c2 = pick(N6);
+  } else {
+    const p = pick([-2, -1, 1, 2]), q = pick([-2, -1, 1, 2]);
+    let m1, m2; do { m1 = pick([-2, -1, 1, 2]); m2 = pick([-2, -1, 1, 2]); } while (m1 === m2);
+    a1 = m1*p; b1 = m1*q; a2 = m2*p; b2 = m2*q;
+    if (kind === 2){ const t = pick([-3, -2, -1, 1, 2, 3]); c1 = m1*t; c2 = m2*t; }
+    else { const N6 = [-6,-5,-4,-3,-2,-1,1,2,3,4,5,6]; do { c1 = pick(N6); c2 = pick(N6); } while (c1*m2 === c2*m1); }
+  }
+  const dl = a1*b2 - a2*b1, dx = c1*b2 - c2*b1, dy = a1*c2 - a2*c1;
+  const idx = kind === 0 ? 0 : (kind === 1 ? 1 : 4);
+  const detLine = M(R`\Delta=\begin{vmatrix}${a1}&${b1}\\${a2}&${b2}\end{vmatrix}=${dl}`);
+  const why = kind === 1
+    ? `${detLine}. Оскільки ${M(R`\Delta\neq 0`)}, за правилом Крамера розв'язок єдиний: ${M(R`x=\frac{\Delta_x}{\Delta}=${fr(dx, dl)},\ y=\frac{\Delta_y}{\Delta}=${fr(dy, dl)}`)}.`
+    : (kind === 0
+      ? `${detLine}. Далі ${M(R`\Delta_x=\begin{vmatrix}${c1}&${b1}\\${c2}&${b2}\end{vmatrix}=${dx}`)}, ${M(R`\Delta_y=\begin{vmatrix}${a1}&${c1}\\${a2}&${c2}\end{vmatrix}=${dy}`)}: ${M(R`\Delta=0`)}, але ${dx !== 0 ? M(R`\Delta_x\neq 0`) : M(R`\Delta_y\neq 0`)}, тож система несумісна.`
+      : `${detLine}. Далі ${M(R`\Delta_x=${dx}`)}, ${M(R`\Delta_y=${dy}`)}: усі три визначники нульові, а рядки коефіцієнтів ненульові, тож друге рівняння є кратним першого і розв'язків безліч.`);
+  return {
+    topic: TOPIC.sys, type: 'mcq',
+    prompt: `Скільки розв'язків має система ${D(R`\begin{cases}${eqTex(a1, b1, c1)}\\ ${eqTex(a2, b2, c2)}\end{cases}`)}`,
+    hint: `Складіть визначник ${M(R`\Delta`)} із коефіцієнтів при x та y. Якщо ${M(R`\Delta\neq 0`)} — за правилом Крамера розв'язок єдиний. Якщо ${M(R`\Delta=0`)} — обчисліть ${M(R`\Delta_x`)} та ${M(R`\Delta_y`)} (стовпчик коефіцієнтів при x, відповідно при y, замініть стовпчиком вільних членів): обидва нульові — розв'язків безліч, інакше їх немає. Лінійна система не може мати рівно 2 чи 3 розв'язки.`,
+    options: SYS_OPTS, expectedIdx: idx, sample: String(idx), display: SYS_OPTS[idx],
+    explain: `${why} Визначники дають відповідь, не розв'язуючи систему до кінця.`,
+    meta: { kind: 'sys', a1, b1, c1, a2, b2, c2, idx }
+  };
+}
+
+// B) розклад вектора в заданому базисі (2D — загальний; 3D — ортогональний)
+function genBasisDecomp(){
+  const ortho = Math.random() < 0.4;
+  let B, c;
+  if (ortho){
+    const base = [[1,2,2],[2,1,-2],[2,-2,1]];
+    const perm = shuffle([0, 1, 2]);
+    B = shuffle(base).map(v => perm.map(k => v[k] * 1)).map(v => { const sg = pick([-1, 1]); return v.map(x => x * sg); });
+    c = [pick(NZ), pick(NZ), pick(NZ)];
+  } else {
+    do { B = [[rnd(-3,3), rnd(-3,3)], [rnd(-3,3), rnd(-3,3)]]; } while (B[0][0]*B[1][1] - B[0][1]*B[1][0] === 0);
+    c = [pick([-4,-3,-2,-1,1,2,3,4]), pick([-4,-3,-2,-1,1,2,3,4])];
+  }
+  const n = B.length;
+  const v = Array.from({length: n}, (_, k) => B.reduce((sum, b, i) => sum + c[i] * b[k], 0) + 0);
+  const bs = B.map((b, i) => R`\mathbf b_${i + 1}=${vc(b)}`).join(R`,\quad `);
+  const sumTex = c.map((ci, i) => `${paren(ci)}${vc(B[i])}`).join('+');
+  let explain;
+  if (ortho){
+    explain = `Базис ортогональний (скалярні добутки різних векторів дорівнюють нулю), ${M(R`(\mathbf b_i,\mathbf b_i)=9`)}, тому ${M(R`c_i=\frac{(\mathbf v,\mathbf b_i)}{(\mathbf b_i,\mathbf b_i)}`)}: ` +
+      B.map((b, i) => M(R`c_${i + 1}=\frac{${dotTex(v, b)}}{9}=${c[i]}`)).join('; ') + '.';
+  } else {
+    explain = `Умова ${M(R`\mathbf v=c_1\mathbf b_1+c_2\mathbf b_2`)} — це система ${M(R`\begin{cases}${eqTex(B[0][0], B[1][0], v[0]).replace('x', 'c_1').replace('y', 'c_2')}\\ ${eqTex(B[0][1], B[1][1], v[1]).replace('x', 'c_1').replace('y', 'c_2')}\end{cases}`)}, її розв'язок ${M(R`c_1=${c[0]},\ c_2=${c[1]}`)}. Перевірка: ${M(R`${sumTex}=${vc(v)}`)}.`;
+  }
+  return {
+    topic: TOPIC.basis, type: 'vec', tol: 0.005,
+    prompt: `Задано базис ${D(bs)} Розкладіть вектор ${D(R`\mathbf v=${vc(v)}`)} за цим базисом, тобто ${M(R`\mathbf v=\sum_i c_i\mathbf b_i`)}. Відповідь — коефіцієнти розкладу через кому, у порядку базисних векторів.`,
+    hint: ortho
+      ? `Перевірте, що базисні вектори попарно ортогональні. Тоді ${M(R`c_i=\dfrac{(\mathbf v,\mathbf b_i)}{(\mathbf b_i,\mathbf b_i)}`)}. (Можна й через систему лінійних рівнянь, але так швидше.)`
+      : `Рівність ${M(R`\mathbf v=\sum_i c_i\mathbf b_i`)} покоординатно дає систему лінійних рівнянь відносно коефіцієнтів ${M(R`c_i`)} (по одному рівнянню на кожну координату).`,
+    expected: c, display: M(R`(${c.join(',\\ ')})`), sample: c.join(', '),
+    explain,
+    meta: { kind: 'basis', B, v, c, ortho }
+  };
+}
+
+// C) визначник оберненої або транспонованої матриці
+function genDetInvTrans(){
+  const n = pick([2, 3]), inv = Math.random() < 0.5;
+  let A, d;
+  do { A = randMat(n, n, n === 2 ? -4 : -2, n === 2 ? 4 : 2); d = detN(A); } while (d === 0 || Math.abs(d) > 8);
+  let calc;
+  if (n === 2) calc = M(R`\det A=${paren(A[0][0])}\cdot ${paren(A[1][1])}-${paren(A[0][1])}\cdot ${paren(A[1][0])}=${d}`);
+  else {
+    const a = A, pr = (i, j, k) => `${paren(a[0][i])}\\cdot ${paren(a[1][j])}\\cdot ${paren(a[2][k])}`;
+    calc = M(R`\det A=${pr(0,1,2)}+${pr(1,2,0)}+${pr(2,0,1)}-${pr(2,1,0)}-${pr(0,2,1)}-${pr(1,0,2)}=${d}`) + ' (правило Саррюса)';
+  }
+  const exp = inv ? 1 / d : d;
+  return {
+    topic: TOPIC.norm, type: 'num', tol: 0.005,
+    prompt: `Матриця ${D(R`A=${pm(A)}`)} Чому дорівнює ${M(inv ? R`\det\left(A^{-1}\right)` : R`\det\left(A^{T}\right)`)}?`,
+    hint: inv
+      ? `З рівності ${M(R`\det A\cdot\det(A^{-1})=\det I=1`)} випливає, що ${M(R`\det(A^{-1})=1/\det A`)}. Спершу обчисліть ${M(R`\det A`)}${n === 3 ? ' (правило Саррюса або розклад за рядком)' : ''}.`
+      : `Транспонування не змінює визначник: ${M(R`\det(A^{T})=\det A`)}. Тож достатньо обчислити ${M(R`\det A`)}${n === 3 ? ' (правило Саррюса або розклад за рядком)' : ''}.`,
+    expected: exp, display: M(inv ? fr(1, d) : String(d)), sample: inv ? `1/(${d})` : String(d),
+    explain: `${calc}. ` + (inv ? `Отже, ${M(R`\det(A^{-1})=\frac{1}{\det A}=${fr(1, d)}`)}.` : `Отже, ${M(R`\det(A^{T})=\det A=${d}`)}.`),
+    meta: { kind: 'detinv', A, inv, d }
+  };
+}
+
 function makeQuestions(){
-  return [genOrthoX(), genCosine(), genOrthMat(), genMV(), genFindAB(),
-          genNorms(), genTriDet(), genInvOrth(), genEigFromVec(), genComplexEig(), genSymEig(), genAsymEig(),
+  // слоти 4, 5, 7 випадково обирають один із двох генераторів
+  const slot4 = Math.random() < 0.5 ? genMV : genDetInvTrans;
+  const slot5 = Math.random() < 0.5 ? genFindAB : genBasisDecomp;
+  const slot7 = Math.random() < 0.5 ? genTriDet : genSysCount;
+  return [genOrthoX(), genCosine(), genOrthMat(), slot4(), slot5(),
+          genNorms(), slot7(), genInvOrth(), genEigFromVec(), genComplexEig(), genSymEig(), genAsymEig(),
           genOperatorMCQ(), genAreaScale(), genDetSignMCQ()];
 }
 
