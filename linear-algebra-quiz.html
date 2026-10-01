@@ -1287,9 +1287,9 @@ function buildCap5(){
   cap5.tiles = cap5Gen();
   card.body.innerHTML = `
     <div class="rc-frame">
-      <div class="rc-head">
-        <p class="rc-title">Доведіть, що ви не робот</p>
-        <p class="rc-sub">Виберіть усі матриці з визначником 0 · якщо таких більше немає, натисніть «Перевірити»</p>
+         <div class="rc-head" style="background:#4a90e2">
+        <p class="rc-title" style="color:#fff">Доведіть, що ви не робот</p>
+        <p class="rc-sub" style="color:rgba(255,255,255,0.85)">Виберіть усі матриці з визначником 0 · якщо таких більше немає, натисніть «Перевірити»</p>
       </div>
       <div class="tiles">${cap5.tiles.map((t, i) => `<div class="tile" data-i="${i}">${cap5MatHTML(t.m)}<span class="tick">✓</span></div>`).join('')}</div>
       <div class="rc-foot">
