@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Квіз: лінійна алгебра</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+  :root {
+    --bg: #F5F3EE;
+    --panel: #FFFFFF;
+    --panel-border: rgba(20,27,42,0.14);
+    --grid: rgba(20,27,42,0.06);
+    --ink: #171E2C;
+    --dim: #5B6472;
+    --gold: #93711A;
+    --teal: #0E7C72;
+    --good: #1F7A3D;
+    --bad: #AE3A2E;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 28px 28px;
+    color: var(--ink);
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 48px 20px 90px;
+  }
+  .page { max-width: 680px; margin: 0 auto; }
+
+  #stopwatch {
+    position: fixed; top: 18px; right: 18px;
+    background: var(--panel); border: 1px solid var(--panel-border); color: var(--ink);
+    font-size: 0.82rem; padding: 8px 12px 10px; opacity: 0.6; z-index: 50;
+    transition: opacity 0.15s ease; pointer-events: none; min-width: 96px;
+  }
+  #stopwatch:hover { opacity: 0.9; }
+  #stopwatch .dot { display: inline-block; width: 6px; height: 6px; background: var(--teal); border-radius: 50%; margin-right: 7px; }
+  #stopwatch .sw-progress-track { height: 2px; background: var(--panel-border); margin-top: 7px; }
+  #stopwatch .sw-progress-fill { height: 100%; background: var(--teal); width: 0%; transition: width 0.25s ease; }
+
+  header { margin-bottom: 40px; }
+  .logo { width: 76px; height: 76px; display: block; margin-bottom: 18px; }
+  .logo line { stroke: var(--dim); stroke-width: 1; }
+  .logo .vec { stroke: var(--teal); stroke-width: 2; }
+  .logo .vec2 { stroke: var(--gold); stroke-width: 2; }
+  .logo .par { stroke: var(--dim); stroke-width: 1; stroke-dasharray: 3 3; }
+
+  h1 { font-family: 'Spectral', Georgia, serif; font-weight: 700; font-size: 2rem; letter-spacing: -0.01em; margin: 0 0 10px; }
+  .subtitle { color: var(--dim); font-size: 0.92rem; max-width: 56ch; margin: 0 0 10px; }
+  .format-note { color: var(--dim); font-size: 0.8rem; max-width: 62ch; margin: 0; border-left: 2px solid var(--gold); padding-left: 12px; }
+
+  #startBtn, #submitBtn, #retryBtn {
+    background: var(--teal); color: var(--bg); border: none;
+    font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 0.9rem;
+    padding: 14px 22px; cursor: pointer;
+  }
+  #startBtn { margin-top: 30px; }
+  #startBtn:hover, #submitBtn:hover, #retryBtn:hover { filter: brightness(1.08); }
+  #startBtn:disabled { opacity: 0.5; cursor: default; }
+  #quiz.locked { display: none; }
+
+  .q { border-top: 1px solid var(--panel-border); padding: 26px 0; }
+  .q:last-of-type { border-bottom: 1px solid var(--panel-border); }
+  .topic { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); margin-bottom: 4px; }
+  .q-num { font-size: 0.78rem; color: var(--dim); margin-bottom: 10px; }
+  .q-prompt { font-family: 'Spectral', Georgia, serif; font-size: 1.12rem; margin: 0 0 16px; max-width: 62ch; }
+  .q-prompt b { font-weight: 600; }
+
+  .katex { font-size: 1.05em; }
+  .katex-display { margin: 0.7em 0; overflow-x: auto; overflow-y: hidden; }
+  .katex-display > .katex { text-align: left; }
+
+  .answer-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .answer-row input[type="text"] {
+    background: var(--panel); border: 1px solid var(--panel-border); color: var(--ink);
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.95rem; padding: 10px 12px; width: 280px; max-width: 100%;
+  }
+  .answer-row input[type="text"]:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+
+  .opts { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  label.opt {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--panel); border: 1px solid var(--panel-border);
+    padding: 9px 12px; cursor: pointer;
+    font-family: 'Spectral', Georgia, serif; font-size: 1rem;
+  }
+  label.opt:hover { border-color: var(--teal); }
+  label.opt input { margin-top: 5px; accent-color: var(--teal); }
+
+  .hint-btn {
+    background: transparent; border: 1px solid var(--panel-border); color: var(--gold);
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; padding: 9px 12px; cursor: pointer;
+  }
+  .hint-btn:hover { border-color: var(--gold); }
+  .hint-btn:disabled { cursor: default; opacity: 0.55; }
+  .hint-text { display: none; margin-top: 12px; font-size: 0.86rem; color: var(--dim); border-left: 2px solid var(--gold); padding-left: 12px; }
+  .hint-text.shown { display: block; }
+
+  .actions { margin-top: 46px; display: flex; justify-content: flex-start; }
+
+  #results { display: none; }
+  .score-block {
+    border-top: 1px solid var(--panel-border); border-bottom: 1px solid var(--panel-border);
+    padding: 28px 0; margin: 40px 0 30px; display: flex; justify-content: space-between;
+    align-items: flex-end; flex-wrap: wrap; gap: 16px;
+  }
+  .score-num { font-family: 'Spectral', Georgia, serif; font-weight: 700; font-size: 2.6rem; }
+  .score-num span { color: var(--dim); font-size: 1.4rem; }
+  .time-num { font-family: 'Spectral', Georgia, serif; font-weight: 700; font-size: 1.6rem; text-align: right; }
+  .time-lbl, .score-note { color: var(--dim); font-size: 0.8rem; }
+
+  .review { border-top: 1px solid var(--panel-border); padding: 20px 0; }
+  .review:last-child { border-bottom: 1px solid var(--panel-border); }
+  .review-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; font-size: 0.78rem; color: var(--dim); }
+  .verdict { font-weight: 600; }
+  .verdict.correct { color: var(--good); }
+  .verdict.wrong { color: var(--bad); }
+  .verdict.partial { color: var(--gold); }
+  .review-prompt { font-family: 'Spectral', Georgia, serif; font-size: 1.03rem; margin: 10px 0 12px; }
+  .review-line { font-size: 0.88rem; margin: 4px 0; }
+  .review-line .lbl { color: var(--dim); }
+  .your-ans.wrong { color: var(--bad); }
+  .your-ans.correct { color: var(--good); }
+  .review-explain { margin-top: 10px; font-family: 'Spectral', Georgia, serif; font-size: 0.98rem; color: var(--dim); padding: 10px 12px; background: var(--panel); border: 1px solid var(--panel-border); }
+
+  @media (prefers-reduced-motion: reduce) { .sw-progress-fill { transition: none; } }
+</style>
+</head>
+<body>
+
+<div id="stopwatch"><span class="dot"></span><span id="timeDisplay">00:00</span><div class="sw-progress-track"><div class="sw-progress-fill" id="swProgressFill"></div></div></div>
+
+<div class="page">
+
+  <header>
+    <svg class="logo" viewBox="0 0 76 76" xmlns="http://www.w3.org/2000/svg">
+      <line x1="6" y1="66" x2="70" y2="66"></line>
+      <line x1="10" y1="70" x2="10" y2="6"></line>
+      <line class="par" x1="46" y1="30" x2="58" y2="50"></line>
+      <line class="par" x1="34" y1="46" x2="58" y2="50"></line>
+      <line class="vec" x1="10" y1="66" x2="46" y2="30"></line>
+      <line class="vec2" x1="10" y1="66" x2="34" y2="46"></line>
+    </svg>
+    <h1>Лінійна алгебра</h1>
+    <p class="subtitle">15 задач: скалярний добуток і ортогональність, множення матриці на вектор, норми, визначник, обернена матриця, власні числа й вектори, матриця як лінійний оператор. Числа в умовах генеруються випадково — кожна спроба відрізняється; усі відповіді цілі або раціональні (власні числа — цілі або комплексні з цілими частинами).</p>
+    <p class="format-note">Формат відповіді: число або дріб (<code>3/5</code>, <code>-7</code>, <code>0.6</code> — десятковий дріб із крапкою або комою). Якщо відповідь складається з кількох чисел — запишіть їх через кому в порядку, вказаному в умові; скільки їх має бути, визначайте самі. Комплексні числа: <code>2+3i</code>, <code>-i</code>; пару спряжених можна скорочено: <code>2±3i</code>.</p>
+    <button id="startBtn">Старт</button>
+  </header>
+
+  <div id="quiz" class="locked"></div>
+
+  <div class="actions"><button id="submitBtn">Завершити тест</button></div>
+
+  <div id="results">
+    <div class="score-block">
+      <div>
+        <div class="score-num" id="scoreNum">0<span> / 15</span></div>
+        <p class="score-note" id="scoreNote"></p>
+      </div>
+      <div>
+        <div class="time-num" id="finalTime">00:00</div>
+        <p class="time-lbl">витрачений час</p>
+      </div>
+    </div>
+    <div id="reviewList"></div>
+    <div class="actions"><button id="retryBtn">Пройти ще раз</button></div>
+  </div>
+
+</div>
+
+<script>
+// ===================== ДОПОМІЖНІ ФУНКЦІЇ =====================
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = arr => arr[rnd(0, arr.length - 1)];
+function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = rnd(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const gcd = (a, b) => b ? gcd(b, a % b) : Math.abs(a);
+const R = String.raw;
+const BS = '\\';
+const M = s => BS + '(' + s + BS + ')';   // inline LaTeX
+const D = s => BS + '[' + s + BS + ']';   // display LaTeX
+const NZ = [-3,-2,-1,1,2,3];
+
+function tx(v){ return typeof v === 'number' ? String(v === 0 ? 0 : v) : v; }
+function paren(v){ return typeof v === 'number' ? (v < 0 ? `(${v})` : String(v)) : v; }
+function fr(n, d){
+  if (d < 0){ n = -n; d = -d; }
+  const g = gcd(n, d) || 1; n /= g; d /= g;
+  if (d === 1) return String(n === 0 ? 0 : n);
+  return (n < 0 ? '-' : '') + BS + 'frac{' + Math.abs(n) + '}{' + d + '}';
+}
+function pm(rows){ return R`\begin{pmatrix}` + rows.map(r => r.map(tx).join(' & ')).join(R` \\ `) + R`\end{pmatrix}`; }
+function vc(a){ return pm(a.map(x => [x])); }
+function randMat(r, c, lo, hi){ return Array.from({length:r}, () => Array.from({length:c}, () => rnd(lo, hi))); }
+function mulMV(A, x){ return A.map(row => row.reduce((s, a, j) => s + a * x[j], 0) + 0); }
+function det2(m){ return m[0][0]*m[1][1] - m[0][1]*m[1][0]; }
+function dotTex(a, b){ return a.map((v, i) => `${paren(v)}${BS}cdot ${paren(b[i])}`).join(' + '); }
+function linTex(c, S, v){ // c·v + S
+  const cs = c === 1 ? '' : (c === -1 ? '-' : String(c));
+  const ss = S === 0 ? '' : (S < 0 ? `-${-S}` : `+${S}`);
+  return `${cs}${v}${ss}`;
+}
+function cstr(re, im){
+  if (im === 0) return String(re);
+  const a = Math.abs(im), s = a === 1 ? 'i' : a + 'i';
+  if (re === 0) return (im < 0 ? '-' : '') + s;
+  return `${re}${im < 0 ? '-' : '+'}${s}`;
+}
+function divisors(n){ const r = []; for (let d = 1; d <= n; d++) if (n % d === 0) r.push(d); return r; }
+
+const TOPIC = {
+  dot:  'Скалярний добуток і ортогональність',
+  mv:   'Множення матриці на вектор',
+  norm: 'Норми, визначник, обернена матриця',
+  eig:  'Власні числа й власні вектори',
+  op:   'Матриця як лінійний оператор'
+};
+
+// ===================== ТЕМА 1: СКАЛЯРНИЙ ДОБУТОК, ОРТОГОНАЛЬНІСТЬ =====================
+// 1) невідома компонента x, щоб вектори були ортогональні
+function genOrthoX(){
+  const n = pick([3, 4]);
+  const p = rnd(0, n - 1);
+  let q; do { q = rnd(0, n - 1); } while (q === p);
+  let a, b, x;
+  do {
+    x = pick([-5,-4,-3,-2,-1,1,2,3,4,5]);
+    a = []; b = [];
+    for (let i = 0; i < n; i++){ a.push(rnd(-3, 3)); b.push(pick(NZ)); }
+    b[q] = pick([-1, 1]); a[p] = x;
+    let s = 0; for (let i = 0; i < n; i++) if (i !== q) s += a[i] * b[i];
+    a[q] = (-s * b[q]) || 0;      // b[q] = ±1, тому a[q]·b[q] = −s
+  } while (a.some(v => Math.abs(v) > 9));
+  const inSecond = Math.random() < 0.5;
+  const v1 = inSecond ? b : a, v2 = inSecond ? a : b;
+  const d1 = v1.slice(), d2 = v2.slice();
+  (inSecond ? d2 : d1)[p] = 'x';
+  const cp = (inSecond ? v1 : v2)[p];            // коефіцієнт при x
+  let S = 0; for (let i = 0; i < n; i++) if (i !== p) S += v1[i] * v2[i];
+  const terms = d1.map((u, i) => `${paren(u)}${BS}cdot ${paren(d2[i])}`).join(' + ');
+  return {
+    topic: TOPIC.dot, type: 'num', tol: 0.005,
+    prompt: `Задано вектори ${D(R`\mathbf a=${vc(d1)},\qquad \mathbf b=${vc(d2)}`)} При якому значенні <b>x</b> вони ортогональні?`,
+    hint: `Вектори ортогональні тоді й лише тоді, коли їхній скалярний добуток дорівнює нулю: ${M(R`(\mathbf a,\mathbf b)=\sum a_ib_i=0`)}. Складіть рівняння відносно x.`,
+    expected: x, display: M(String(x)), sample: String(x),
+    explain: `${M(R`(\mathbf a,\mathbf b)=${terms}=${linTex(cp, S, 'x')}=0`)}, звідки ${M(R`x=-\frac{${S}}{${paren(cp)}}=${x}`)}.`,
+    meta: { v1, v2, p, x }
+  };
+}
+
+// 2) косинус кута між векторами з цілими довжинами
+const T3 = [[1,2,2],[2,3,6],[1,4,8],[4,4,7],[2,6,9],[6,6,7]];
+const T4 = [[1,1,3,5],[2,4,5,6],[1,2,4,10],[2,2,4,5]];
+function randSigned(t){ return shuffle(t).map(v => v * pick([-1, 1])); }
+const normInt = v => Math.round(Math.sqrt(v.reduce((s, c) => s + c*c, 0)));
+function genCosine(){
+  const a = randSigned(pick(T3)), b = randSigned(pick(T3));
+  const dot = a.reduce((s, v, i) => s + v * b[i], 0) + 0;
+  const na = normInt(a), nb = normInt(b);
+  return {
+    topic: TOPIC.dot, type: 'num', tol: 0.006,
+    prompt: `Знайдіть косинус кута між векторами ${D(R`\mathbf a=${vc(a)},\qquad \mathbf b=${vc(b)}`)}`,
+    hint: `${M(R`\cos\varphi=\dfrac{(\mathbf a,\mathbf b)}{\|\mathbf a\|\cdot\|\mathbf b\|}`)}. Довжини обох векторів тут — цілі числа.`,
+    expected: dot / (na * nb), display: M(fr(dot, na * nb)), sample: `${dot}/${na * nb}`,
+    explain: `${M(R`(\mathbf a,\mathbf b)=${dotTex(a, b)}=${dot}`)}; ${M(R`\|\mathbf a\|=${na},\ \|\mathbf b\|=${nb}`)}. Отже, ${M(R`\cos\varphi=\frac{${dot}}{${na}\cdot ${nb}}=${fr(dot, na * nb)}`)}.`,
+    meta: { a, b }
+  };
+}
+
+// 3) ортогональна матриця 2×2 з невідомим елементом
+function genOrthMat(){
+  let [p, q, r] = pick([[3,4,5],[5,12,13],[8,15,17]]);
+  if (Math.random() < 0.5){ [p, q] = [q, p]; }
+  const c1 = [p * pick([-1, 1]), q * pick([-1, 1])];
+  const s = pick([-1, 1]);
+  const c2 = [-s * c1[1], s * c1[0]];
+  const unk = rnd(0, 1), ans = c2[unk];
+  const Q = [[c1[0], unk === 0 ? 'x' : c2[0]], [c1[1], unk === 1 ? 'x' : c2[1]]];
+  const coefX = c1[unk], rest = c1[1 - unk] * c2[1 - unk];
+  return {
+    topic: TOPIC.dot, type: 'num', tol: 0.005,
+    prompt: `При якому значенні <b>x</b> матриця ${D(R`Q=\frac{1}{${r}}${pm(Q)}`)} є ортогональною?`,
+    hint: `Стовпчики ортогональної матриці попарно ортогональні (і мають одиничну довжину). Прирівняйте до нуля скалярний добуток першого й другого стовпчиків.`,
+    expected: ans, display: M(String(ans)), sample: String(ans),
+    explain: `${M(R`${r}^2(\mathbf q_1,\mathbf q_2)=${c1[0]}\cdot ${unk === 0 ? 'x' : paren(c2[0])}+${paren(c1[1])}\cdot ${unk === 1 ? 'x' : paren(c2[1])}=0`)}, звідки ${M(R`x=-\frac{${rest}}{${paren(coefX)}}=${ans}`)}. Перевірка довжини: ${M(R`${p}^2+${q}^2=${r}^2`)}, тож стовпчики справді нормовані.`,
+    meta: { Q: [[c1[0], c2[0]], [c1[1], c2[1]]], r, unk, ans }
+  };
+}
+
+// ===================== ТЕМА 2: МАТРИЦЯ × ВЕКТОР =====================
+function genMV(){
+  const [rows, cols] = pick([[2,2],[3,3],[3,3],[2,3],[3,2],[4,3],[2,4]]);
+  let A, x;
+  do { A = randMat(rows, cols, -3, 3); x = Array.from({length: cols}, () => rnd(-3, 3)); } while (x.every(v => v === 0));
+  const y = mulMV(A, x);
+  return {
+    topic: TOPIC.mv, type: 'vec', tol: 0.005,
+    prompt: `Обчисліть добуток ${D(R`A\mathbf x=${pm(A)}${vc(x)}`)} Відповідь — компоненти результату через кому.`,
+    hint: `Кожна компонента добутку — скалярний добуток відповідного рядка матриці на вектор x. Кількість компонент результату дорівнює кількості рядків матриці.`,
+    expected: y, display: M(vc(y)), sample: y.join(', '),
+    explain: `Матриця ${rows}×${cols}, вектор має ${cols} компоненти, тому результат має ${rows}: ${M(R`A\mathbf x=${vc(A.map(row => row.map((v, j) => `${paren(v)}\\cdot ${paren(x[j])}`).join('+')))}=${vc(y)}`)}`,
+    meta: { A, x, rows, cols }
+  };
+}
+function genFindAB(){
+  const a = rnd(-4, 4), b = rnd(-4, 4), m = rnd(-3, 3), n = rnd(-3, 3);
+  const x = [pick(NZ), pick(NZ)];
+  const A = [[a, m], [n, b]];
+  const r = mulMV(A, x);
+  return {
+    topic: TOPIC.mv, type: 'vec', tol: 0.005,
+    prompt: `Відомо, що ${D(R`\begin{pmatrix}a & ${m}\\ ${n} & b\end{pmatrix}${vc(x)}=${vc(r)}`)} Знайдіть <b>a</b> та <b>b</b> (через кому: спочатку a, потім b).`,
+    hint: `Запишіть добуток покомпонентно: перший рядок дає рівняння ${M(R`a\cdot ${paren(x[0])}+${paren(m)}\cdot ${paren(x[1])}=${r[0]}`)}, другий — рівняння для b.`,
+    expected: [a, b], display: M(R`a=${a},\ b=${b}`), sample: `${a}, ${b}`,
+    explain: `${M(R`a\cdot ${paren(x[0])}+${paren(m)}\cdot ${paren(x[1])}=${r[0]}\Rightarrow a=${a}`)}; ${M(R`${paren(n)}\cdot ${paren(x[0])}+b\cdot ${paren(x[1])}=${r[1]}\Rightarrow b=${b}`)}.`,
+    meta: { A, x, r, a, b }
+  };
+}
+
+// ===================== ТЕМА 3: НОРМИ, ВИЗНАЧНИК, ОБЕРНЕНА =====================
+function genNorms(){
+  const v = Math.random() < 0.5 ? randSigned(pick(T3)) : randSigned(pick(T4));
+  const l1 = v.reduce((s, c) => s + Math.abs(c), 0), l2 = normInt(v), sq = v.reduce((s, c) => s + c*c, 0);
+  return {
+    topic: TOPIC.norm, type: 'vec', tol: 0.005,
+    prompt: `Для вектора ${D(R`\mathbf v=${vc(v)}`)} знайдіть його норми ${M(R`\|\mathbf v\|_1`)} та ${M(R`\|\mathbf v\|_2`)}. Відповідь — через кому, у цьому порядку.`,
+    hint: `${M(R`\|\mathbf v\|_1=\sum|v_i|`)} — сума модулів компонент (${M(R`L_1`)}-норма); ${M(R`\|\mathbf v\|_2=\sqrt{\sum v_i^2}`)} — евклідова довжина (${M(R`L_2`)}-норма). Сума квадратів тут — точний квадрат.`,
+    expected: [l1, l2], display: M(R`\|\mathbf v\|_1=${l1},\ \|\mathbf v\|_2=${l2}`), sample: `${l1}, ${l2}`,
+    explain: `${M(R`\|\mathbf v\|_1=${v.map(c => Math.abs(c)).join('+')}=${l1}`)}; ${M(R`\|\mathbf v\|_2=\sqrt{${v.map(c => c*c).join('+')}}=\sqrt{${sq}}=${l2}`)}.`,
+    meta: { v }
+  };
+}
+function genTriDet(){
+  const n = 5, up = Math.random() < 0.5;
+  const d = Array.from({length: n}, () => pick([-2, -1, 1, 2, 3]));
+  if (Math.random() < 0.15) d[rnd(0, n - 1)] = 0;
+  const A = [];
+  for (let i = 0; i < n; i++){
+    A.push([]);
+    for (let j = 0; j < n; j++){
+      if (i === j) A[i].push(d[i]);
+      else if (up ? j > i : j < i) A[i].push(rnd(-5, 5));
+      else A[i].push(0);
+    }
+  }
+  const det = d.reduce((s, c) => s * c, 1) || 0;
+  return {
+    topic: TOPIC.norm, type: 'num', tol: 0.005,
+    prompt: `Знайдіть визначник матриці ${D(R`A=${pm(A)}`)}`,
+    hint: `Придивіться до розташування нулів: матриця ${up ? 'верхня' : 'нижня'} трикутна. Визначник трикутної матриці — добуток елементів головної діагоналі.`,
+    expected: det, display: M(String(det)), sample: String(det),
+    explain: `Матриця ${up ? 'верхня' : 'нижня'} трикутна, тому ${M(R`\det A=${d.map(paren).join('\\cdot ')}=${det}`)}.`,
+    meta: { A }
+  };
+}
+const H4 = [[1,1,1,1],[1,-1,1,-1],[1,1,-1,-1],[1,-1,-1,1]];
+function genInvOrth(){
+  const useH = Math.random() < 0.5;
+  let A, scale;
+  if (useH){
+    const rp = shuffle([0,1,2,3]), cp = shuffle([0,1,2,3]);
+    A = rp.map(i => cp.map(j => H4[i][j] * 1));
+    A = A.map(row => { const s = pick([-1, 1]); return row.map(v => v * s); });
+    scale = 2;
+  } else {
+    const perm = shuffle([0,1,2,3]);
+    A = perm.map(j => Array.from({length: 4}, (_, k) => k === j ? pick([-1, 1]) : 0));
+    scale = 1;
+  }
+  const row = rnd(0, 3);
+  const exp = A.map(r => r[row] / scale);
+  const names = ['перший','другий','третій','четвертий'];
+  const lead = scale === 2 ? R`\frac{1}{2}` : '';
+  return {
+    topic: TOPIC.norm, type: 'vec', tol: 0.005,
+    prompt: `Матриця ${D(R`A=${lead}${pm(A)}`)} є ортогональною. Знайдіть <b>${names[row]} рядок</b> оберненої матриці ${M(R`A^{-1}`)}. Відповідь — компоненти рядка через кому.`,
+    hint: `Для ортогональної матриці ${M(R`A^{-1}=A^{T}`)}. Рядки транспонованої матриці — це стовпчики початкової.`,
+    expected: exp, display: M(R`(${exp.map((_, i) => fr(A[i][row], scale)).join(',\\ ')})`), sample: exp.join(', '),
+    explain: `Оскільки ${M(R`A^{T}A=I`)}, маємо ${M(R`A^{-1}=A^{T}`)}. Рядок з номером ${row + 1} матриці ${M(R`A^{T}`)} — це стовпчик з номером ${row + 1} матриці ${M('A')}: ${M(R`(${exp.map((_, i) => fr(A[i][row], scale)).join(',\ ')})`)}.`,
+    meta: { A, scale, row }
+  };
+}
+
+// ===================== ТЕМА 4: ВЛАСНІ ЧИСЛА Й ВЕКТОРИ =====================
+function genEigFromVec(){
+  let lam; do { lam = rnd(-3, 3); } while (lam === 0);
+  const k = rnd(0, 2);
+  const v = [rnd(-2, 2), rnd(-2, 2), rnd(-2, 2)]; v[k] = 1;
+  const A = [[0,0,0],[0,0,0],[0,0,0]];
+  for (let i = 0; i < 3; i++){
+    let sum = 0;
+    for (let j = 0; j < 3; j++) if (j !== k){ A[i][j] = rnd(-2, 2); sum += A[i][j] * v[j]; }
+    A[i][k] = lam * v[i] - sum;
+  }
+  const Av = mulMV(A, v);
+  return {
+    topic: TOPIC.eig, type: 'num', tol: 0.005,
+    prompt: `Вектор ${M(R`\mathbf v=${vc(v)}`)} є власним вектором матриці ${D(R`A=${pm(A)}`)} Знайдіть відповідне власне число ${M(R`\lambda`)}.`,
+    hint: `Помножте матрицю на вектор: ${M(R`A\mathbf v=\lambda\mathbf v`)}. Порівняйте результат із v — він відрізняється від v лише числовим множником.`,
+    expected: lam, display: M(`\\lambda=${lam}`), sample: String(lam),
+    explain: `${M(R`A\mathbf v=${vc(Av)}=${paren(lam)}\cdot ${vc(v)}`)}, тому ${M(R`\lambda=${lam}`)}.`,
+    meta: { A, v, lam }
+  };
+}
+function genComplexEig(){
+  const a = rnd(-3, 3), b = rnd(1, 4);
+  let A;
+  if (Math.random() < 0.5){
+    const bs = pick([-1, 1]) * b;
+    A = [[a, -bs], [bs, a]];
+  } else {
+    const m = pick([-2, -1, 1, 2]);
+    const k = pick([-1, 1]) * pick(divisors(b*b + m*m));
+    A = [[a + m, -k], [(b*b + m*m) / k, a - m]];
+  }
+  const tr = A[0][0] + A[1][1], dt = det2(A);
+  return {
+    topic: TOPIC.eig, type: 'cset', tol: 0.005,
+    prompt: `Знайдіть власні числа матриці ${D(R`A=${pm(A)}`)} Відповідь — власні числа через кому (комплексні числа записуйте як <code>a+bi</code>).`,
+    hint: `Складіть характеристичне рівняння ${M(R`\lambda^2-(\operatorname{tr}A)\,\lambda+\det A=0`)}. Дискримінант вийде від'ємним: ${M(R`\sqrt{-D}=i\sqrt{D}`)}.`,
+    expectedSet: [{re: a, im: b}, {re: a, im: -b}],
+    display: M(`${cstr(a, b)},\\ ${cstr(a, -b)}`), sample: `${cstr(a, b)}, ${cstr(a, -b)}`,
+    explain: `${M(R`\operatorname{tr}A=${tr},\ \det A=${dt}`)}, отже ${M(R`\lambda^2-${paren(tr)}\lambda+${paren(dt)}=0`)}. Дискримінант ${M(R`D=${paren(tr)}^2-4\cdot ${paren(dt)}=${tr*tr - 4*dt}`)}, тож ${M(R`\lambda=\frac{${tr}\pm ${b*2}i}{2}=${cstr(a, b)},\ ${cstr(a, -b)}`)}.`,
+    meta: { A, a, b }
+  };
+}
+// симетрична матриця з раціональними нормованими власними векторами (піфагорова трійка 3-4-5), A = λ₁uuᵀ + λ₂wwᵀ
+function genSymEig(){
+  let p = 3, q = 4; if (Math.random() < 0.5){ p = 4; q = 3; }
+  p *= pick([-1, 1]); q *= pick([-1, 1]);
+  let l1 = rnd(1, 8), l2; do { l2 = rnd(1, 8); } while (l2 === l1);
+  const n11 = l1*p*p + l2*q*q, n12 = (l1 - l2)*p*q, n22 = l1*q*q + l2*p*p;   // чисельники над 25
+  const f = nn => Number((nn / 25).toFixed(2));
+  const A = [[f(n11), f(n12)], [f(n12), f(n22)]];
+  let lam, vx, vy;
+  if (l1 > l2){ lam = l1; vx = p; vy = q; } else { lam = l2; vx = -q; vy = p; }
+  if (vx < 0){ vx = -vx; vy = -vy; }
+  const tr = l1 + l2, dt = l1 * l2;
+  return {
+    topic: TOPIC.eig, type: 'vec', tol: 0.005,
+    prompt: `Симетрична матриця ${D(R`A=${pm(A)}`)} має натуральні власні числа. Знайдіть більше з них та відповідний нормований власний вектор із <b>додатною першою компонентою</b>. Відповідь — через кому: спочатку ${M(R`\lambda`)}, потім компоненти вектора (дроби на кшталт <code>3/5</code> допустимі).`,
+    hint: `Характеристичне рівняння: ${M(R`\lambda^2-(\operatorname{tr}A)\lambda+\det A=0`)}. Далі розв'яжіть ${M(R`(A-\lambda I)\mathbf v=0`)}, оберіть цілий вектор і поділіть на його довжину (пригадайте трійку 3, 4, 5).`,
+    expected: [lam, vx / 5, vy / 5],
+    display: M(R`\lambda=${lam},\ \mathbf v=\left(${fr(vx, 5)},\ ${fr(vy, 5)}\right)^{T}`),
+    sample: `${lam}, ${vx}/5, ${vy}/5`,
+    explain: `${M(R`\operatorname{tr}A=${tr},\ \det A=${dt}`)}, тож ${M(R`\lambda^2-${tr}\lambda+${dt}=0`)} і ${M(R`\lambda_{1,2}=${l1},\ ${l2}`)}. Для ${M(R`\lambda=${lam}`)} розв'язок ${M(R`(A-\lambda I)\mathbf v=0`)} пропорційний ${M(R`(${vx},\ ${vy})^{T}`)}; його довжина ${M(R`\sqrt{${vx*vx}+${vy*vy}}=5`)}, тому нормований вектор — ${M(R`\left(${fr(vx, 5)},\ ${fr(vy, 5)}\right)^{T}`)}.`,
+    meta: { A, lam, vx, vy, l1, l2 }
+  };
+}
+
+// асиметрична матриця з раціональними нормованими власними векторами: B = P·diag(λ₁,λ₂)·P⁻¹,
+// стовпчики P — неортогональні піфагорові напрямки (3,4)&(4,3) або (3,−4)&(4,−3); знаменник |det P| = 7
+function genAsymEig(){
+  const pair = pick([[[3,4],[4,3]], [[3,-4],[4,-3]]]);
+  let [u, w] = pair;
+  if (Math.random() < 0.5){ [u, w] = [w, u]; }
+  let l1 = rnd(1, 8), l2; do { l2 = rnd(1, 8); } while (l2 === l1);   // u ↔ l1, w ↔ l2
+  const a = u[0], c = u[1], b = w[0], d = w[1];
+  let dt = a*d - b*c;                                                // = ±7
+  let n = [[a*l1*d - b*l2*c, a*b*(l2 - l1)], [c*d*(l1 - l2), -c*l1*b + d*l2*a]];
+  if (dt < 0){ dt = -dt; n = n.map(r => r.map(v => -v)); }
+  const exact = n.every(r => r.every(v => v % dt === 0));
+  const B = exact ? n.map(r => r.map(v => v / dt)) : n;
+  const lead = exact ? '' : R`\frac{1}{${dt}}`;
+  // менше власне число та його нормований вектор з додатною першою компонентою
+  let lam, vx, vy;
+  if (l1 < l2){ lam = l1; vx = u[0]; vy = u[1]; } else { lam = l2; vx = w[0]; vy = w[1]; }
+  if (vx < 0){ vx = -vx; vy = -vy; }
+  const tr = l1 + l2, det = l1 * l2;
+  return {
+    topic: TOPIC.eig, type: 'vec', tol: 0.005,
+    prompt: `Матриця ${D(R`B=${lead}${pm(B)}`)} має два натуральні власні числа. Знайдіть <b>менше</b> з них та відповідний йому нормований власний вектор із додатною першою компонентою. Відповідь — через кому: спочатку ${M(R`\lambda`)}, потім компоненти вектора (дроби на кшталт <code>3/5</code> допустимі).`,
+    hint: `Слід матриці дорівнює сумі власних чисел, а визначник — їхньому добутку: складіть ${M(R`\lambda^2-(\operatorname{tr}B)\lambda+\det B=0`)}. Далі розв'яжіть ${M(R`(B-\lambda I)\mathbf v=0`)}, оберіть цілий вектор і поділіть на його довжину (трійка 3, 4, 5). Матриця не симетрична, тож власні вектори тут не ортогональні.`,
+    expected: [lam, vx / 5, vy / 5],
+    display: M(R`\lambda=${lam},\ \mathbf v=\left(${fr(vx, 5)},\ ${fr(vy, 5)}\right)^{T}`),
+    sample: `${lam}, ${vx}/5, ${vy}/5`,
+    explain: `${M(R`\operatorname{tr}B=${tr},\ \det B=${det}`)}, тож ${M(R`\lambda^2-${tr}\lambda+${det}=0`)} і ${M(R`\lambda_{1,2}=${Math.min(l1, l2)},\ ${Math.max(l1, l2)}`)}. Для меншого ${M(R`\lambda=${lam}`)} розв'язок ${M(R`(B-\lambda I)\mathbf v=0`)} пропорційний ${M(R`(${vx},\ ${vy})^{T}`)}; його довжина ${M(R`\sqrt{${vx*vx}+${vy*vy}}=5`)}, тому нормований вектор — ${M(R`\left(${fr(vx, 5)},\ ${fr(vy, 5)}\right)^{T}`)}.`,
+    meta: { B: n.map(r => r.map(v => v / dt)), l1, l2, u, w, lam, vx, vy }
+  };
+}
+
+// ===================== ТЕМА 5: МАТРИЦЯ ЯК ЛІНІЙНИЙ ОПЕРАТОР =====================
+// Повний клас знакових перестановочних матриць 2×2 — рівно 8 штук.
+const OPS = [
+  { m: [[1,0],[0,-1]],  t: R`відбиття відносно осі Ox (${M(R`y\to -y`)})` },
+  { m: [[-1,0],[0,1]],  t: R`відбиття відносно осі Oy (${M(R`x\to -x`)})` },
+  { m: [[0,1],[1,0]],   t: R`відбиття відносно бісектриси першого координатного кута, прямої ${M('y=x')} (міняє місцями x та y)` },
+  { m: [[0,-1],[-1,0]], t: R`відбиття відносно прямої ${M('y=-x')} (${M(R`(x,y)\to(-y,-x)`)})` },
+  { m: [[-1,0],[0,-1]], t: `поворот на 180° навколо початку координат` },
+  { m: [[0,1],[-1,0]],  t: `поворот на 90° за годинниковою стрілкою` },
+  { m: [[0,-1],[1,0]],  t: `поворот на 90° проти годинникової стрілки` },
+  { m: [[1,0],[0,1]],   t: `нічого не робить — це одинична матриця` }
+];
+function genOperatorMCQ(){
+  const idx = rnd(0, OPS.length - 1), A = OPS[idx].m;
+  return {
+    topic: TOPIC.op, type: 'mcq',
+    prompt: `Матриця ${D(R`A=${pm(A)}`)} діє на вектори-стовпчики ${M(R`(x,y)^{T}`)} у стандартній системі координат (Ox — праворуч, Oy — угору). Що робить це перетворення?`,
+    hint: `Подивіться, куди переходять базисні вектори ${M(R`\mathbf e_1=(1,0)^{T}`)} та ${M(R`\mathbf e_2=(0,1)^{T}`)}: їхні образи — це стовпчики матриці.`,
+    options: OPS.map(o => o.t), expectedIdx: idx, sample: String(idx),
+    display: OPS[idx].t,
+    explain: `Стовпчики матриці — образи базисних векторів: ${M(R`A\mathbf e_1=${vc([A[0][0], A[1][0]])},\ A\mathbf e_2=${vc([A[0][1], A[1][1]])}`)}. Це ${OPS[idx].t}.`,
+    meta: { A, idx }
+  };
+}
+function genAreaScale(){
+  let A; do { A = randMat(2, 2, -3, 3); } while (det2(A) === 0);
+  const S = rnd(2, 9), dt = det2(A);
+  return {
+    topic: TOPIC.op, type: 'num', tol: 0.005,
+    prompt: `Матриця ${M(R`A=${pm(A)}`)} діє на площині як лінійне перетворення. Фігура ${M(R`\Phi`)} має площу <b>${S}</b>. Яку площу має образ фігури ${M(R`\Phi`)} після дії ${M('A')}?`,
+    hint: `Площа будь-якої фігури множиться на ${M(R`|\det A|`)}. Знак визначника на площу не впливає (він лише показує, чи змінюється орієнтація).`,
+    expected: Math.abs(dt) * S, display: M(String(Math.abs(dt) * S)), sample: String(Math.abs(dt) * S),
+    explain: `${M(R`\det A=${paren(A[0][0])}\cdot ${paren(A[1][1])}-${paren(A[0][1])}\cdot ${paren(A[1][0])}=${dt}`)}. Площа множиться на ${M(R`|\det A|=${Math.abs(dt)}`)}: ${M(R`${Math.abs(dt)}\cdot ${S}=${Math.abs(dt) * S}`)}.`,
+    meta: { A, S }
+  };
+}
+const DET_OPTS = [
+  `Площа збільшується, орієнтація зберігається`,
+  `Площа зменшується, орієнтація зберігається`,
+  `Площа й орієнтація зберігаються`,
+  `Площа збільшується, орієнтація змінюється на протилежну`,
+  `Площа зменшується, орієнтація змінюється на протилежну`,
+  `Площа зберігається, орієнтація змінюється на протилежну`,
+  `Площа стає нульовою (образ — відрізок або точка), оберненої матриці немає`
+];
+function genDetSignMCQ(){
+  const cat = rnd(0, 6);
+  let N, s = 1;
+  const rm = () => randMat(2, 2, -3, 3);
+  if (cat === 0){ do { N = rm(); } while (det2(N) < 2 || det2(N) > 9); }
+  else if (cat === 1){ s = pick([2, 3]); do { N = rm(); } while (!(det2(N) >= 1 && det2(N) < s*s)); }
+  else if (cat === 2){ const k = pick(NZ); N = pick([[[1,k],[0,1]], [[1,0],[k,1]], [[0,-1],[1,0]], [[0,1],[-1,0]], [[-1,0],[0,-1]], [[2,1],[1,1]], [[1,1],[1,2]], [[3,2],[1,1]], [[2,3],[1,2]]]); }
+  else if (cat === 3){ do { N = rm(); } while (det2(N) > -2 || det2(N) < -9); }
+  else if (cat === 4){ s = pick([2, 3]); do { N = rm(); } while (!(det2(N) <= -1 && det2(N) > -s*s)); }
+  else if (cat === 5){ N = pick([[[1,0],[0,-1]], [[-1,0],[0,1]], [[0,1],[1,0]], [[0,-1],[-1,0]], [[2,1],[1,0]], [[1,1],[2,1]], [[1,2],[1,1]], [[1,2],[2,3]]]); }
+  else { do { const a = rnd(-3, 3), b = rnd(-3, 3), k = rnd(-3, 3); N = [[a, b], [k*a, k*b]]; } while (N.every(r => r.every(v => v === 0))); }
+  const dn = det2(N) + 0, dd = s * s;
+  const lead = s > 1 ? R`\frac{1}{${s}}` : '';
+  return {
+    topic: TOPIC.op, type: 'mcq',
+    prompt: `Матриця ${D(R`A=${lead}${pm(N)}`)} задає лінійне перетворення площини. Як воно змінює площі фігур та їхню орієнтацію (напрям обходу контура)?`,
+    hint: `Обчисліть ${M(R`\det A`)}. Модуль ${M(R`|\det A|`)} — у скільки разів змінюється площа (більше 1 — збільшується, менше 1 — зменшується, 0 — образ вироджується). Знак: плюс — орієнтація зберігається, мінус — змінюється на протилежну.`,
+    options: DET_OPTS, expectedIdx: cat, sample: String(cat), display: DET_OPTS[cat],
+    explain: `${M(s > 1 ? R`\det A=\frac{1}{${dd}}\cdot ${paren(dn)}=${fr(dn, dd)}` : R`\det A=${dn}`)}. Отже: ${DET_OPTS[cat].toLowerCase()}.`,
+    meta: { N, s, cat }
+  };
+}
+
+function makeQuestions(){
+  return [genOrthoX(), genCosine(), genOrthMat(), genMV(), genFindAB(),
+          genNorms(), genTriDet(), genInvOrth(), genEigFromVec(), genComplexEig(), genSymEig(), genAsymEig(),
+          genOperatorMCQ(), genAreaScale(), genDetSignMCQ()];
+}
+
+// ===================== РОЗБІР ВІДПОВІДЕЙ =====================
+function parseExpr(raw){
+  if (raw == null) return NaN;
+  let s = String(raw).toLowerCase().trim().replace(/[−–]/g, '-');
+  if (s === '') return NaN;
+  s = s.replace(/,/g, '.').replace(/\s+/g, '');
+  if (!/^[0-9+\-*/().]+$/.test(s)) return NaN;
+  try {
+    const val = Function('"use strict";return (' + s + ')')();
+    return (typeof val === 'number' && isFinite(val)) ? val : NaN;
+  } catch (e) { return NaN; }
+}
+function parseComplexAnswer(raw){
+  if (raw == null) return null;
+  let s = String(raw).toLowerCase().replace(/\s+/g, '').replace(/,/g, '.').replace(/[−–]/g, '-');
+  if (s === '') return null;
+  if (s[0] !== '+' && s[0] !== '-') s = '+' + s;
+  const terms = s.match(/[+-][^+-]+/g);
+  if (!terms) return null;
+  let re = 0, im = 0;
+  for (const t of terms){
+    if (t.endsWith('i')){
+      let coef = t.slice(0, -1).replace(/\*$/, '');
+      if (coef === '+' || coef === '') coef = '1';
+      else if (coef === '-') coef = '-1';
+      const val = parseExpr(coef.replace(/^\+/, ''));
+      if (isNaN(val)) return null;
+      im += val;
+    } else {
+      const val = parseExpr(t);
+      if (isNaN(val)) return null;
+      re += val;
+    }
+  }
+  return { re, im };
+}
+function splitItems(raw){
+  let s = String(raw).trim().replace(/[−–]/g, '-');
+  if (/^[(\[].*[)\]]$/.test(s)) s = s.slice(1, -1);
+  return s;
+}
+function parseVec(raw){
+  let s = splitItems(raw);
+  if (!s) return null;
+  let items;
+  if (s.includes(';')) items = s.split(';');
+  else if (s.includes(',')) items = s.split(',');
+  else items = s.split(/\s+/);
+  items = items.map(t => t.trim()).filter(t => t !== '');
+  if (!items.length) return null;
+  const vals = items.map(parseExpr);
+  return vals.some(isNaN) ? null : vals;
+}
+function parseCSet(raw){
+  const s = splitItems(raw);
+  if (!s) return null;
+  const items = (s.includes(';') ? s.split(';') : s.split(',')).map(t => t.trim()).filter(Boolean);
+  const out = [];
+  for (const it of items){
+    if (it.includes('±')){
+      const ca = parseComplexAnswer(it.replace('±', '+')), cb = parseComplexAnswer(it.replace('±', '-'));
+      if (!ca || !cb) return null;
+      out.push(ca, cb);
+    } else {
+      const c = parseComplexAnswer(it);
+      if (!c) return null;
+      out.push(c);
+    }
+  }
+  return out.length ? out : null;
+}
+function gradeQuestion(q, raw, hintUsed){
+  const hf = hintUsed ? 0.5 : 1;
+  let fraction = 0;
+  if (q.type === 'num'){
+    const v = parseExpr(raw);
+    fraction = (!isNaN(v) && Math.abs(v - q.expected) <= q.tol) ? 1 : 0;
+  } else if (q.type === 'vec'){
+    const parts = parseVec(raw);
+    if (parts && parts.length <= q.expected.length){
+      let m = 0;
+      q.expected.forEach((e, k) => { if (k < parts.length && Math.abs(parts[k] - e) <= q.tol) m++; });
+      fraction = m / q.expected.length;
+    }
+  } else if (q.type === 'cset'){
+    const parts = parseCSet(raw);
+    if (parts){
+      const used = new Array(parts.length).fill(false);
+      let m = 0;
+      q.expectedSet.forEach(ev => {
+        for (let k = 0; k < parts.length; k++){
+          if (!used[k] && Math.abs(parts[k].re - ev.re) <= q.tol && Math.abs(parts[k].im - ev.im) <= q.tol){ used[k] = true; m++; break; }
+        }
+      });
+      fraction = m / Math.max(q.expectedSet.length, parts.length);
+    }
+  } else if (q.type === 'mcq'){
+    fraction = (raw !== '' && Number(raw) === q.expectedIdx) ? 1 : 0;
+  }
+  return { isCorrect: fraction === 1, isPartial: fraction > 0 && fraction < 1, points: fraction * hf };
+}
+
+// ===================== ІНТЕРФЕЙС =====================
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtPts(p){ return Number.isInteger(p) ? String(p) : p.toFixed(2).replace(/0+$/, '').replace(/\.$/, ''); }
+function formatTime(ms){
+  const t = Math.floor(ms / 1000), m = Math.floor(t / 60), s = t % 60;
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function initUI(){
+  const questions = makeQuestions();
+  const state = questions.map(() => ({ hintUsed: false, answered: false }));
+  const quizEl = document.getElementById('quiz');
+  const MATH_OPTS = { delimiters: [ {left: '\\[', right: '\\]', display: true}, {left: '\\(', right: '\\)', display: false} ], throwOnError: false };
+  function typeset(el){ if (window.renderMathInElement) { try { window.renderMathInElement(el, MATH_OPTS); } catch (e) {} } }
+
+  function placeholderFor(q){
+    if (q.type === 'vec') return 'числа через кому';
+    if (q.type === 'cset') return 'комплексні числа через кому';
+    return 'число або дріб';
+  }
+
+  function render(){
+    quizEl.innerHTML = questions.map((q, i) => `
+      <div class="q" data-idx="${i}">
+        <div class="topic">${q.topic}</div>
+        <div class="q-num">Питання ${i + 1} з ${questions.length}</div>
+        <p class="q-prompt">${q.prompt}</p>
+        ${q.type === 'mcq'
+          ? `<div class="opts">${q.options.map((o, k) => `<label class="opt"><input type="radio" name="q${i}" value="${k}" class="ans-radio" data-idx="${i}"><span>${o}</span></label>`).join('')}</div>
+             <div class="answer-row"><button class="hint-btn" data-idx="${i}">Показати підказку (−0.5 бала)</button></div>`
+          : `<div class="answer-row">
+               <input type="text" class="ans-input" data-idx="${i}" placeholder="${placeholderFor(q)}" autocomplete="off">
+               <button class="hint-btn" data-idx="${i}">Показати підказку (−0.5 бала)</button>
+             </div>`}
+        <div class="hint-text" id="hint-${i}"></div>
+      </div>`).join('');
+
+    quizEl.querySelectorAll('.ans-input').forEach(inp => inp.addEventListener('input', () => {
+      state[Number(inp.dataset.idx)].answered = inp.value.trim() !== ''; updateProgress();
+    }));
+    quizEl.querySelectorAll('.ans-radio').forEach(r => r.addEventListener('change', () => {
+      state[Number(r.dataset.idx)].answered = true; updateProgress();
+    }));
+    quizEl.querySelectorAll('.hint-btn').forEach(btn => btn.addEventListener('click', () => {
+      const idx = Number(btn.dataset.idx);
+      if (state[idx].hintUsed) return;
+      state[idx].hintUsed = true;
+      const hintEl = document.getElementById('hint-' + idx);
+      hintEl.innerHTML = questions[idx].hint;
+      hintEl.classList.add('shown');
+      btn.disabled = true;
+      btn.textContent = 'Підказку використано (−0.5 бала)';
+      typeset(hintEl);
+    }));
+    updateProgress();
+    typeset(quizEl);
+  }
+
+  function updateProgress(){
+    const n = state.filter(s => s.answered).length;
+    document.getElementById('swProgressFill').style.width = (n / questions.length * 100) + '%';
+  }
+
+  let startTime = null, timerInterval = null;
+  function tickTimer(){ document.getElementById('timeDisplay').textContent = formatTime(Date.now() - startTime); }
+  document.getElementById('startBtn').addEventListener('click', () => {
+    startTime = Date.now();
+    timerInterval = setInterval(tickTimer, 1000);
+    tickTimer();
+    quizEl.classList.remove('locked');
+    const btn = document.getElementById('startBtn');
+    btn.disabled = true; btn.textContent = 'Тест триває…';
+    typeset(quizEl);
+  });
+
+  function submitQuiz(){
+    if (startTime === null) return;
+    clearInterval(timerInterval);
+    const elapsed = Date.now() - startTime;
+    let total = 0;
+    const reviewHtml = questions.map((q, i) => {
+      let raw = '', shown = '';
+      if (q.type === 'mcq'){
+        const ch = quizEl.querySelector(`input[name="q${i}"]:checked`);
+        raw = ch ? ch.value : '';
+        shown = ch ? q.options[Number(raw)] : '— не обрано —';
+      } else {
+        const inp = quizEl.querySelector(`.ans-input[data-idx="${i}"]`);
+        raw = inp ? inp.value.trim() : '';
+        shown = raw === '' ? '— не введено —' : esc(raw);
+      }
+      const g = gradeQuestion(q, raw, state[i].hintUsed);
+      total += g.points;
+      const vc = g.isCorrect ? 'correct' : (g.isPartial ? 'partial' : 'wrong');
+      const vt = g.isCorrect ? 'вірно' : (g.isPartial ? 'частково' : 'невірно');
+      return `
+        <div class="review">
+          <div class="review-head"><span>Питання ${i + 1}</span><span class="verdict ${vc}">${vt} · ${fmtPts(g.points)} б.</span></div>
+          <p class="review-prompt">${q.prompt}</p>
+          <p class="review-line"><span class="lbl">Ваша відповідь: </span><span class="your-ans ${vc === 'wrong' ? 'wrong' : 'correct'}">${shown}</span></p>
+          <p class="review-line"><span class="lbl">Правильна відповідь: </span>${q.display}</p>
+          <div class="review-explain">${q.explain}</div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('reviewList').innerHTML = reviewHtml;
+    document.getElementById('scoreNum').innerHTML = `${fmtPts(total)}<span> / ${questions.length}</span>`;
+    const hints = state.filter(s => s.hintUsed).length;
+    document.getElementById('scoreNote').textContent = hints > 0
+      ? `Використано підказок: ${hints} (кожна знімає 0.5 бала з відповідної правильної відповіді).`
+      : `Підказки не використовувались.`;
+    document.getElementById('finalTime').textContent = formatTime(elapsed);
+    quizEl.style.display = 'none';
+    document.querySelector('.actions').style.display = 'none';
+    document.getElementById('results').style.display = 'block';
+    typeset(document.getElementById('reviewList'));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  document.getElementById('submitBtn').addEventListener('click', submitQuiz);
+  document.getElementById('retryBtn').addEventListener('click', () => location.reload());
+  render();
+  window.addEventListener('load', () => typeset(document.body));
+}
+if (typeof document !== 'undefined' && document.getElementById) initUI();
+</script>
+</body>
+</html>
